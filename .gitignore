@@ -1,0 +1,5 @@
+*__pycache__/*
+log-crash.log
+log.log
+botToken.py
+database/*
