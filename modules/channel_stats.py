@@ -45,14 +45,17 @@ class ChannelStats(carlbot.Module):
             if search_channel.type != discord.enums.ChannelType.voice:
 
                 log = 0
-
-                async for m in carlbot.client.logs_from(search_channel, limit=99999999999999999, before=None, after=target):
-                    log += 1
+                try:
+                    async for m in carlbot.client.logs_from(search_channel, limit=99999999999999999, before=None, after=target):
+                        log += 1
+                except discord.errors.Forbidden:
+                    log = -1
 
                 channel = ChannelStat(search_channel.name, log)
                 channels.append(channel)
 
-                total_messages += log
+                if log > 0:
+                    total_messages += log
 
         # Sort it.
         channels = sorted(channels, key=lambda c: c.messages, reverse=True)
@@ -60,10 +63,12 @@ class ChannelStats(carlbot.Module):
         message_string += "Total Messages since {target:%c}: {count}\n".format(target=target, count=total_messages)
 
         for stat in channels:
-            message_string += "{channel_name}: %{num:.2f} - {count} messages.\n".format(channel_name=stat.name,
-                                                                                        count=stat.messages,
-                                                                                        num=(
-                                                                                            stat.messages / total_messages) * 100)
+            if stat.messages != -1:
+                message_string += "{channel_name}: %{num:.2f} - {count} messages.\n".format(channel_name=stat.name,
+                                                                                            count=stat.messages,
+                                                                        num=(stat.messages / total_messages) * 100)
+            else:
+                message_string += "{channel_name}: ACCESS DENIED.\n".format(channel_name=stat.name)
 
         message_string += '```'
 
