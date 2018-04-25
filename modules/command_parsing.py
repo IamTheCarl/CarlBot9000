@@ -46,7 +46,10 @@ class CommandParsing(carlbot.Module):
         a = args.pop(0)
         # Notice that we exclude roles.
         if a.startswith("<@") and not a.startswith("<@&"):
-            return discord.utils.get(server.members, id=a[2:-1])
+            offset = 2
+            if a.startswith("<@!"):
+                offset = 3
+            return discord.utils.get(server.members, id=a[offset:-1])
 
     @staticmethod
     async def get_role(args, server):
