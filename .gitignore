@@ -2,4 +2,5 @@
 log-crash.log
 log.log
 botToken.py
+database.db
 database/*

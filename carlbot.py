@@ -4,6 +4,7 @@ import os
 import sys
 import traceback
 import curses
+import sqlalchemy as sql
 
 from botToken import BotToken
 
@@ -498,14 +499,15 @@ def load_modules():
     # to import carlbot.
     sys.modules['carlbot'] = CarlBot()
 
-    for file in os.listdir(module_folder):  # List all the contents of the directory.
-        if file.startswith("_"):  # ignore private python files.
+    with open("enabled_modules.txt", "r") as mods_file:
+        mod_names = mods_file.readlines()
+        mod_names = [x.strip() for x in mod_names]
+
+    for mod in mod_names:  # List all the contents of the directory.
+        if mod.startswith("#"):  # ignore comments.
             continue
 
-        file = file[:-3]
-
-        term_print_info("Found module: {}".format(file))
-        load_module(file)
+        load_module(mod)
 
     print("Done.")
 
@@ -525,13 +527,6 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-
-    # if message.author.id == "215290849016283137":
-    #   num = random.randint(0, 2)
-    #   if num == 2:
-    #      await client.add_reaction(message, '\U0001F95C')
-    #   elif num == 1:
-    #      await client.add_reaction(message, '\U0001F45E')
 
     channel = message.channel
     server = None
@@ -564,6 +559,10 @@ async def on_message(message):
 
             if message_string and len(message_string) > 0:
                 await client.send_message(message.channel, message_string)
+
+
+db_engine = sql.create_engine("sqlite:///database.db", echo=True)
+db_engine.connect()
 
 
 def main(std_screen):
