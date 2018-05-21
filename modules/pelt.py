@@ -18,9 +18,11 @@ class Pelt(carlbot.Module):
         return [self.on_message]
 
     async def pelt(self, args, server, channel, message):
-        if (message.author.server_permissions.administrator or message.author.id == "193584788689387529"):
-            args.pop(0)  # Remove the command name.
-            target = await carlbot.modules.command_parsing.get_user(args, server)
+
+        args.pop(0)  # Remove the command name.
+        target = await carlbot.modules.command_parsing.get_user(args, server)
+
+        if message.author.server_permissions.administrator or target == message.author:
             
             if target.id in self.targets:
                 self.targets.remove(target.id)
