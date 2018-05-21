@@ -27,6 +27,10 @@ class Authority(carlbot.Module):
         self.servers = {}
         self.authorities = []
 
+        with open("owners.txt", "r") as owners_file:
+            self.owners = owners_file.readlines()
+            self.owners = [x.strip() for x in self.owners]
+
         self._register_authority("manipulate_authority")
 
         for server in carlbot.client.servers:
@@ -60,9 +64,8 @@ class Authority(carlbot.Module):
     def _delete_authority(self, name):
         self.authorities.remove(name)
 
-    @staticmethod
-    async def check_admin(target):
-        if target.id == "193584788689387529":
+    async def check_admin(self, target):
+        if target.id in self.owners:
             return True
 
         if isinstance(target, discord.Member):
