@@ -5,11 +5,14 @@ import discord
 class Pelt(carlbot.Module):
     def __init__(self):
         super().__init__()
-        self.targets = []
+
+    @staticmethod
+    def get_name():
+        return "pelt"
 
     @staticmethod
     def dependency_list():
-        return ["command_parsing"]
+        return ["command_parsing", "persistence"]
 
     def public_commands(self):
         return [("pelt", self.pelt)]
@@ -23,16 +26,27 @@ class Pelt(carlbot.Module):
         target = await carlbot.modules.command_parsing.get_user(args, server)
 
         if message.author.server_permissions.administrator or target == message.author:
+            data = carlbot.modules.persistence.get_server_data(self, server.id)
+            targets = data.get("targets", None)
+            if not targets:
+                targets = []
+                data["targets"] = targets
             
-            if target.id in self.targets:
-                self.targets.remove(target.id)
+            if target.id in targets:
+                targets.remove(target.id)
                 await carlbot.client.send_message(channel, "I will pelt no more.")
             else:
-                self.targets.append(target.id)
+                targets.append(target.id)
                 await carlbot.client.send_message(channel, "I will pelt.")
 
     async def on_message(self, server, channel, message):
-        if message.author.id in self.targets:
+        data = carlbot.modules.persistence.get_server_data(self, server.id)
+        targets = data.get("targets", None)
+        if not targets:
+            targets = []
+            data["targets"] = targets
+
+        if message.author.id in targets:
             await carlbot.client.add_reaction(message, "\U0001F95C")
 
-carlbot.add_module("pelt", Pelt())
+carlbot.add_module(Pelt())

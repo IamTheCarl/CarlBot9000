@@ -5,6 +5,7 @@ import sys
 import traceback
 import curses
 
+from abc import ABC, abstractmethod
 from botToken import BotToken
 
 module_folder = "./modules"
@@ -22,13 +23,6 @@ COMMAND_COLOR = 5
 INFO_WINDOW_COLOR = 6
 
 _LOG = None
-
-
-# def term_print(text):
-#     _LOG.write("{}\n".format(text))
-#
-#     main_window.addstr("{}\n".format(text))
-#     main_window.refresh()
 
 
 def term_print_error(text):
@@ -59,9 +53,13 @@ def term_print_info(text):
     main_window.refresh()
 
 
-class Module:
+class Module(ABC):
     def __init__(self):
         self.is_loaded = False
+
+    @abstractmethod
+    def get_name(self):
+        pass
 
     @staticmethod
     def dependency_list():
@@ -79,7 +77,8 @@ class Module:
     def private_commands():
         return []
 
-    def background_task(self):
+    @staticmethod
+    def background_task():
         return None
 
     @staticmethod
@@ -246,9 +245,10 @@ on_typing_hooks = []
 group_join_hooks = []
 
 
-def add_module(name, module):
+def add_module(module):
 
     module.is_loaded = True
+    name = module.get_name()
 
     for dep in module.dependency_list():
         load_module(dep)

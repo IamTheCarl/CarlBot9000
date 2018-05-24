@@ -12,6 +12,10 @@ class IpChangeDetector(carlbot.Module):
         self.notification_channels = []
 
     @staticmethod
+    def get_name():
+        return "ip_change_detector"
+
+    @staticmethod
     def dependency_list():
         return ["local_terminal"]
 
@@ -165,4 +169,4 @@ class IpChangeDetector(carlbot.Module):
         with open("database/ip_change_detection/channels_to_notify.json", "w") as channels_to_notify:
             json.dump(data, channels_to_notify)
 
-carlbot.add_module("ip_change_detector", IpChangeDetector())
+carlbot.add_module(IpChangeDetector())

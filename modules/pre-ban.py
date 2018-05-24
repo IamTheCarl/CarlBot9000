@@ -6,6 +6,10 @@ class PreBan(carlbot.Module):
         super().__init__()
 
     @staticmethod
+    def get_name():
+        return "pre-ban"
+
+    @staticmethod
     def dependency_list():
         return ["authority"]
 
@@ -13,4 +17,4 @@ class PreBan(carlbot.Module):
     def permission_list():
         return ["pre-ban"]
 
-carlbot.add_module("pre-ban", PreBan())
+carlbot.add_module(PreBan())

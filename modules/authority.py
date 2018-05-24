@@ -37,6 +37,10 @@ class Authority(carlbot.Module):
             self.servers[server] = Authority.Server()
 
     @staticmethod
+    def get_name():
+        return "authority"
+
+    @staticmethod
     def dependency_list():
         return ["persistence", "command_parsing"]
 
@@ -78,9 +82,9 @@ class Authority(carlbot.Module):
             return True
         else:
             if isinstance(target, discord.Member):
-                authority = carlbot.modules.persistence.get_user_data(server_id, target.id).get("authorities", None)
+                authority = carlbot.modules.persistence.get_user_data(self, server_id, target.id).get("authorities", None)
             else:
-                authority = carlbot.modules.persistence.get_role_data(server_id, target.id).get("authorities", None)
+                authority = carlbot.modules.persistence.get_role_data(self, server_id, target.id).get("authorities", None)
 
             if authority:
                 return authority_name in authority
@@ -112,7 +116,7 @@ class Authority(carlbot.Module):
             message += "This role has the following authority:\n" \
                        "```\n"
 
-        data = carlbot.modules.persistence.get_role_data(server.id, target.id)
+        data = carlbot.modules.persistence.get_role_data(self, server.id, target.id)
 
         authorities = data.get("authorities", None)
         if authorities:
@@ -138,7 +142,7 @@ class Authority(carlbot.Module):
             if not target:
                 return "Could not find target user or role."
 
-            data = carlbot.modules.persistence.get_user_data(server.id, target.id)
+            data = carlbot.modules.persistence.get_user_data(self, server.id, target.id)
 
             authorities = data.get("authorities", None)
             if not authorities:
@@ -172,7 +176,7 @@ class Authority(carlbot.Module):
             if not target:
                 return "Could not find target user or role."
 
-            data = carlbot.modules.persistence.get_user_data(server.id, target.id)
+            data = carlbot.modules.persistence.get_user_data(self, server.id, target.id)
 
             authorities = data.get("authorities", None)
             if not authorities:
@@ -199,4 +203,4 @@ class Authority(carlbot.Module):
     def save(self):
         pass
 
-carlbot.add_module("authority", Authority())
+carlbot.add_module(Authority())

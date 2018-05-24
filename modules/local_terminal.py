@@ -46,6 +46,10 @@ class LocalTerminal(carlbot.Module):
 
         self.chat_window = None
 
+    @staticmethod
+    def get_name():
+        return "local_terminal"
+
     def _add_local_command(self, name, function):
         self.commands[name] = function
 
@@ -334,4 +338,4 @@ class LocalTerminal(carlbot.Module):
         carlbot.main_window.resize(curses.LINES, curses.COLS)
         self.command_window.nodelay(1)
 
-carlbot.add_module("local_terminal", LocalTerminal())
+carlbot.add_module(LocalTerminal())

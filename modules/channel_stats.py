@@ -8,6 +8,10 @@ class ChannelStats(carlbot.Module):
         super().__init__()
 
     @staticmethod
+    def get_name():
+        return "channel_stats"
+
+    @staticmethod
     def dependency_list():
         return ["command_parsing"]
 
@@ -76,4 +80,4 @@ class ChannelStats(carlbot.Module):
 
         return message_string
 
-carlbot.add_module("channel_stats", ChannelStats())
+carlbot.add_module(ChannelStats())

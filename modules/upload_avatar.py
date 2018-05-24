@@ -4,6 +4,10 @@ import carlbot
 class UploadAvatar(carlbot.Module):
 
     @staticmethod
+    def get_name():
+        return "upload_avatar"
+
+    @staticmethod
     async def on_connect():
         path = './CarlBot.png'
 
@@ -15,4 +19,4 @@ class UploadAvatar(carlbot.Module):
         return [self.on_connect]
 
 
-carlbot.add_module("upload_avatar", UploadAvatar())
+carlbot.add_module(UploadAvatar())

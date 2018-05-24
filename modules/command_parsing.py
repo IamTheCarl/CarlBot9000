@@ -8,6 +8,10 @@ class CommandParsing(carlbot.Module):
         super().__init__()
 
     @staticmethod
+    def get_name():
+        return "command_parsing"
+
+    @staticmethod
     def get_int_argument(args):
         name = args.pop(0)
         try:
@@ -72,4 +76,4 @@ class CommandParsing(carlbot.Module):
             else:  # Is a user.
                 return discord.utils.get(server.members, id=a[2:-1])
 
-carlbot.add_module("command_parsing", CommandParsing())
+carlbot.add_module(CommandParsing())

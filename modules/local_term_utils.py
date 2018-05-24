@@ -5,6 +5,10 @@ class LocalTermUtils(carlbot.Module):
     def __init__(self):
         super().__init__()
 
+    @staticmethod
+    def get_name():
+        return "local_term_utils"
+
     def local_commands(self):
         return [("reconnect", self.reconnect)]
 
@@ -14,4 +18,4 @@ class LocalTermUtils(carlbot.Module):
         # carlbot.client.connect()
         print("Done.")
 
-carlbot.add_module("local_term_utils", LocalTermUtils())
+carlbot.add_module(LocalTermUtils())
