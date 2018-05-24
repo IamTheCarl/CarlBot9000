@@ -4,7 +4,6 @@ import os
 import sys
 import traceback
 import curses
-import sqlalchemy as sql
 
 from botToken import BotToken
 
@@ -559,10 +558,6 @@ async def on_message(message):
 
             if message_string and len(message_string) > 0:
                 await client.send_message(message.channel, message_string)
-
-
-db_engine = sql.create_engine("sqlite:///database.db", echo=True)
-db_engine.connect()
 
 
 def main(std_screen):
