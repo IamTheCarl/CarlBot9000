@@ -5,7 +5,9 @@ TARGET_USER="discord-bots"
 
 if [ "$TARGET_USER" != "$USER" ]; then
     echo "Only the user $TARGET_USER may run this script."
-    exit 1
+    echo "Enter your password to log in as $TARGET_USER."
+    sudo runuser $TARGET_USER -c "$0 $@"
+    exit
 fi
 
 SESSION="discord-bot-`basename $PWD`"
