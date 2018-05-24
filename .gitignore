@@ -4,3 +4,4 @@ log.log
 botToken.py
 database.db
 database/*
+owners.txt
