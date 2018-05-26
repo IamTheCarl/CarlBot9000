@@ -343,6 +343,9 @@ def add_module(module):
     for m in _modules.values():
         m.on_module_load(module)
 
+    for m in _modules.values():
+        module.on_module_load(m)
+
     _modules[name] = module
 
 
@@ -436,6 +439,9 @@ def unload_module(name):
 
         for m in _modules.values():
             m.on_module_unload(module)
+
+        for m in _modules.values():
+            module.on_module_unload(m)
 
         module.save()
         module.cleanup()
