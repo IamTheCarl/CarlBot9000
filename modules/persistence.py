@@ -53,7 +53,7 @@ class Persistence(carlbot.Module):
 
     def get_role_data(self, module, server_id, role_id):
         server = self._get_server(server_id)
-        role = server.users.get(role_id, None)
+        role = server.roles.get(role_id, None)
         if not role:
             role = {}
             server.roles[role_id] = role
