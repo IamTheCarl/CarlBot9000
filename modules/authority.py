@@ -1,40 +1,23 @@
 import carlbot
 import discord
+import os
+from pathlib import Path
 
 
 class Authority(carlbot.Module):
 
-    class Server:
-        def __init__(self):
-            self.roles = {}
-            self.users = {}
-
-        def give_user_permission(self, server_id, user_id, permission):
-            server = self.servers.get(server_id, None)
-            if not server:
-                server = Authority.Server()
-                self.servers[server_id] = server
-
-            user_id, permission_list = server.users.get(user_id, (user_id, None))
-            if not permission_list:
-                permission_list = []
-                server.users[user_id] = (user_id, permission_list)
-
-            permission_list.append(permission)
-
     def __init__(self):
         super().__init__()
-        self.servers = {}
         self.authorities = []
+
+        if not os.path.exists("owners.txt"):
+            Path("owners.txt").touch()
 
         with open("owners.txt", "r") as owners_file:
             self.owners = owners_file.readlines()
             self.owners = [x.strip() for x in self.owners]
 
         self._register_authority("manipulate_authority")
-
-        for server in carlbot.client.servers:
-            self.servers[server] = Authority.Server()
 
     @staticmethod
     def get_name():
@@ -45,20 +28,21 @@ class Authority(carlbot.Module):
         return ["persistence", "command_parsing"]
 
     def public_commands(self):
-        return [("lsauthority", self.list_authority),
-                ("addauthority", self.add_authority),
-                ("rmauthority", self.remove_authority)]
+        return [("lsauth", self.list_authority),
+                ("addauth", self.add_authority),
+                ("rmauth", self.remove_authority)]
 
     def on_module_load(self, module):
+        print("Regestering authority for module: {}".format(module.get_name()))
         func = getattr(module, "authorities", None)
         if func:
-            for name, command in func():
-                self._register_authority(name, command)
+            for name in func():
+                self._register_authority(name)
 
     def on_module_unload(self, module):
         func = getattr(module, "authorities", None)
         if func:
-            for name, command in func():
+            for name in func():
                 self._delete_authority(name)
 
     def _register_authority(self, name):
@@ -77,14 +61,15 @@ class Authority(carlbot.Module):
         else:
             return target.permissions.administrator
 
-    async def check_authority(self, server_id, target, authority_name):
-        if await self.check_admin(target):
+    async def check_authority(self, server_id, target, authority_name, admin_override=True):
+        if admin_override and await self.check_admin(target):
             return True
         else:
-            if isinstance(target, discord.Member):
-                authority = carlbot.modules.persistence.get_user_data(self, server_id, target.id).get("authorities", None)
-            else:
+
+            if isinstance(target, discord.Role):
                 authority = carlbot.modules.persistence.get_role_data(self, server_id, target.id).get("authorities", None)
+            else:
+                authority = carlbot.modules.persistence.get_user_data(self, server_id, target.id).get("authorities", None)
 
             if authority:
                 return authority_name in authority
@@ -95,15 +80,29 @@ class Authority(carlbot.Module):
         command_name = parts.pop(0)  # Chop off the command name.
 
         if len(parts) == 0:
-            return "Reports what authority a given user or role has associated with it.\n" \
-                   "Usage: {} <@mention user or role here>\n" \
-                   "Please see your Carl Bot distribution's manual for more details.".format(command_name)
+            message = "Reports what authority a given user or role has associated with it.\n" \
+                      "Usage: {} <@mention user or role here>\n" \
+                      "Please see your Carl Bot distribution's manual for more details.\n\n".format(command_name)
+
+            message += "Authorities avalible for assignment:\n```"
+
+            for a in self.authorities:
+                message += "{}\n".format(a)
+
+            message += "```"
+
+            return message
 
         target = await carlbot.modules.command_parsing.get_user_or_role(parts, server)
 
         message = ""
 
-        if isinstance(target, discord.User):
+        if isinstance(target, discord.Role):
+            message += "This role has the following authority:\n" \
+                       "```\n"
+
+            data = carlbot.modules.persistence.get_role_data(self, server.id, target.id)
+        else:
             if await self.check_admin(target):
                 message += "This user is an admin, so they have all authorities.\n" \
                            "Still, on top of that is the following authorities.\n" \
@@ -112,13 +111,10 @@ class Authority(carlbot.Module):
                 message += "This user has the following authority:\n" \
                            "```\n"
 
-        else:
-            message += "This role has the following authority:\n" \
-                       "```\n"
-
-        data = carlbot.modules.persistence.get_role_data(self, server.id, target.id)
+            data = carlbot.modules.persistence.get_user_data(self, server.id, target.id)
 
         authorities = data.get("authorities", None)
+
         if authorities:
             for auth in authorities:
                 message += "{}\n".format(auth)
@@ -142,7 +138,10 @@ class Authority(carlbot.Module):
             if not target:
                 return "Could not find target user or role."
 
-            data = carlbot.modules.persistence.get_user_data(self, server.id, target.id)
+            if isinstance(target, discord.Role):
+                data = carlbot.modules.persistence.get_role_data(self, server.id, target.id)
+            else:
+                data = carlbot.modules.persistence.get_user_data(self, server.id, target.id)
 
             authorities = data.get("authorities", None)
             if not authorities:
@@ -176,7 +175,10 @@ class Authority(carlbot.Module):
             if not target:
                 return "Could not find target user or role."
 
-            data = carlbot.modules.persistence.get_user_data(self, server.id, target.id)
+            if isinstance(target, discord.Role):
+                data = carlbot.modules.persistence.get_role_data(self, server.id, target.id)
+            else:
+                data = carlbot.modules.persistence.get_user_data(self, server.id, target.id)
 
             authorities = data.get("authorities", None)
             if not authorities:
@@ -191,7 +193,7 @@ class Authority(carlbot.Module):
                 authorities.remove(authority)
                 return "Authority removed."
             else:
-                return "Use does not have this authority."
+                return "User does not have this authority."
         else:
             return "Only admins or those with the \"authority\" authority are permitted to modify Carl Bot " \
                    "authorities.\n" \

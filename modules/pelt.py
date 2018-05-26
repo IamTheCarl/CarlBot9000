@@ -12,7 +12,7 @@ class Pelt(carlbot.Module):
 
     @staticmethod
     def dependency_list():
-        return ["command_parsing", "persistence"]
+        return ["command_parsing", "persistence", "authority"]
 
     def public_commands(self):
         return [("pelt", self.pelt)]
@@ -20,12 +20,20 @@ class Pelt(carlbot.Module):
     def message_hooks(self):
         return [self.on_message]
 
+    @staticmethod
+    def authorities():
+        return ["pelt_anyone", "pelt_scrub"]
+
     async def pelt(self, args, server, channel, message):
 
         args.pop(0)  # Remove the command name.
         target = await carlbot.modules.command_parsing.get_user(args, server)
 
-        if message.author.server_permissions.administrator or target == message.author:
+        if await carlbot.modules.authority.check_authority(server.id, target, "pelt_anyone")\
+            or (target == message.author
+                and not await carlbot.modules.authority.check_authority(
+                        server.id, target, "pelt_scrub", admin_override=False)):
+
             data = carlbot.modules.persistence.get_server_data(self, server.id)
             targets = data.get("targets", None)
             if not targets:
