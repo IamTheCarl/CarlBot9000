@@ -29,8 +29,8 @@ class Pelt(carlbot.Module):
         args.pop(0)  # Remove the command name.
         target = await carlbot.modules.command_parsing.get_user(args, server)
 
-        if await carlbot.modules.authority.check_authority(server.id, target, "pelt_anyone")\
-            or (target == message.author
+        if await carlbot.modules.authority.check_authority(server.id, message.author, "pelt_anyone")\
+            or (target.id == message.author.id
                 and not await carlbot.modules.authority.check_authority(
                         server.id, target, "pelt_scrub", admin_override=False)):
 
