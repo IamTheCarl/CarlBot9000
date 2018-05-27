@@ -46,6 +46,8 @@ class Pelt(carlbot.Module):
             else:
                 targets.append(target.id)
                 await carlbot.client.send_message(channel, "I will pelt.")
+        else:
+            await carlbot.client.send_message(channel, "You do not have authority to pelt this person.")
 
     async def on_message(self, server, channel, message):
         data = carlbot.modules.persistence.get_server_data(self, server.id)
