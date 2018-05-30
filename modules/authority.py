@@ -128,7 +128,7 @@ class Authority(carlbot.Module):
     auth_return_codes = {
         0: "Authority Added",
         1: "User or role already has this authority.",
-        2: "\"{auth}\" is not a known authority.",
+        2: "`{auth}` is not a known authority.",
         3: "Authority removed.",
         4: "User does not have this authority."
     }
