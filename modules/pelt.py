@@ -1,5 +1,4 @@
 import carlbot
-import discord
 
 
 class Pelt(carlbot.Module):
@@ -27,6 +26,11 @@ class Pelt(carlbot.Module):
     async def pelt(self, args, server, channel, message):
 
         args.pop(0)  # Remove the command name.
+
+        if len(args) < 1:
+            await carlbot.client.send_message(channel, "You need to supply a target to pelt.")
+            return
+
         target = await carlbot.modules.command_parsing.get_user(args, server)
 
         if await carlbot.modules.authority.check_authority(server.id, message.author, "pelt_anyone")\
