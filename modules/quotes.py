@@ -119,7 +119,8 @@ class Quotes(carlbot.Module):
                         owner = quote["owner"]
 
                         if owner == message.author.id or\
-                                carlbot.modules.authority.check_authority(server.id, message.author.id, "quote_admin"):
+                                await carlbot.modules\
+                                .authority.check_authority(server.id, message.author, "quote_admin"):
 
                             quote["text"] = None
 
@@ -144,7 +145,8 @@ class Quotes(carlbot.Module):
                         owner = quote["owner"]
 
                         if owner == message.author.id or\
-                                carlbot.modules.authority.check_authority(server.id, message.author.id, "quote_admin"):
+                                await carlbot.modules.authority\
+                                .check_authority(server.id, message.author, "quote_admin"):
 
                             quote["text"] = new_text
 
