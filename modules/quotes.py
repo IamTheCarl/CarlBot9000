@@ -28,6 +28,11 @@ class Quotes(carlbot.Module):
     async def quote(self, args, server, channel, message):
         name = args.pop(0)  # Remove command name.
 
+        if await carlbot.modules.authority\
+                .check_authority(server.id, message.author, "quote_scrub", admin_override=False):
+            return "You have the `quote_scrub` authority, meaning that the admins of this server have banned you from "\
+                   "useing quotes.\nIt was probably your own fault and you deserved it."
+
         if len(args) < 1:
             return "Usage: $>{} add|edit|remove|delete_all|setup|<quote#>\nPlease see Carl Bot Wiki for more details."\
                 .format(name)
