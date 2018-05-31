@@ -1,5 +1,8 @@
 import carlbot
 import datetime
+import requests
+import tempfile
+import re
 
 
 class Quotes(carlbot.Module):
@@ -23,10 +26,11 @@ class Quotes(carlbot.Module):
         return ["quote_admin", "infinity_gauntlet_of_quotes", "quote_scrub"]
 
     async def quote(self, args, server, channel, message):
-        name = args.pop(0) # Remove command name.
+        name = args.pop(0)  # Remove command name.
 
         if len(args) < 1:
-            return "Usage: $>{} add|edit|remove|delete_all|setup|<quote#>\nPlease see Carl Bot Wiki for more details.".format(name)
+            return "Usage: $>{} add|edit|remove|delete_all|setup|<quote#>\nPlease see Carl Bot Wiki for more details."\
+                .format(name)
 
         data = carlbot.modules.persistence.get_server_data(self, server.id)
         quotes = data.get("quotes", None)
@@ -161,7 +165,78 @@ class Quotes(carlbot.Module):
 
             return "Unknown action: {}".format(mode)
 
-    def import_nitori(self, args, server, channel, message):
-        pass
+    async def import_nitori(self, args, server, channel, message):
+        args.pop(0)
+
+        data = carlbot.modules.persistence.get_server_data(self, server.id)
+        quotes = data.get("quotes", None)
+
+        if quotes is not None:
+            return "Quote system has already been setup. Use `$>quote delete_all` to delete all quotes. "\
+                   "Then you can use this command."
+
+        if not await carlbot.modules.authority.check_authority(server.id, message.author, "quote_admin"):
+            return "You need the `quote_admin` authority to do this."
+
+        attachments = message.attachments
+        if len(attachments) == 0:
+            return "You must send the Nitori quotes file as an attachment to the message this command was sent in."
+
+        url = attachments[0]["url"]
+
+        net_source = requests.get(url)
+        with tempfile.SpooledTemporaryFile() as source:
+            source.write(bytes(net_source.text, "utf-8"))
+            source.seek(0)
+
+            quotes = {
+                0: {
+                    "text": "Quotes imported from Robo Nitori. RIP Robo Nitori. Thank you Googie for a wonderful bot.",
+                    "datetime": datetime.datetime.now(),
+                    "owner": "",
+                    "channel": ""
+                }
+            }
+
+            data["quotes"] = quotes
+
+            quote = {}
+            number = 0
+
+            for line in source:
+                line = line.decode("utf-8")
+                if line.startswith("Quote"):
+                    start = line.find(":")
+                    num_start = re.search("\d", line).start()
+
+                    quote["text"] = line[start + 2:-1]
+
+                    if start == -1:
+                        start = line.find(" ", num_start)
+                        quote["text"] = None
+
+                    number = int(line[num_start:start])
+
+                    if quote["text"] is None:
+                        quotes[number] = quote
+                        quote = {}
+                    continue
+
+                if line.startswith("Created"):
+                    date_start = re.search("\d", line).start()
+                    date_end = line.find(" ", line.find(" ", date_start) + 1)
+
+                    quote["datetime"] = datetime.datetime.strptime(line[date_start:date_end], "%Y-%m-%d %H:%M:%S")
+
+                    owner_start = line.find("<@") + 2
+                    quote["owner"] = line[owner_start:owner_start + 18]
+
+                    channel_start = line.find("<#") + 2
+                    quote["channel"] = line[channel_start:channel_start + 18]
+
+                    quotes[number] = quote
+                    quote = {}
+
+        return "Done."
 
 carlbot.add_module(Quotes())
