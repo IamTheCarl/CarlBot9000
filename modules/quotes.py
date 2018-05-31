@@ -31,7 +31,7 @@ class Quotes(carlbot.Module):
         if await carlbot.modules.authority\
                 .check_authority(server.id, message.author, "quote_scrub", admin_override=False):
             return "You have the `quote_scrub` authority, meaning that the admins of this server have banned you from "\
-                   "useing quotes.\nIt was probably your own fault and you deserved it."
+                   "using quotes.\nIt was probably your own fault and you deserved it."
 
         if len(args) < 1:
             return "Usage: $>{} add|edit|remove|delete_all|setup|<quote#>\nPlease see Carl Bot Wiki for more details."\
@@ -95,7 +95,8 @@ class Quotes(carlbot.Module):
                 if text is None:
                     return "This quote was deleted."
                 else:
-                    return text
+                    # Put a bullet in front to not trigger commands.
+                    return "\U00002022 {}".format(text)
         else:
             # add, edit, remove, or delete_all quotes
             mode = args.pop(0)
