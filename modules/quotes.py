@@ -4,6 +4,7 @@ import requests
 import tempfile
 import re
 import random
+import discord
 
 
 class Quotes(carlbot.Module):
@@ -176,6 +177,56 @@ class Quotes(carlbot.Module):
                         else:
                             return "Only the owner of this quote or someone with the `quote_admin` "\
                                    "authority can edit this quote."
+                else:
+                    return "Error: Unexpected number of arguments.\n" \
+                           "Should be `$>quote edit [quote number here] "\
+                           "[new text for quote here (best if put between \" marks)]"
+
+            if mode == "info":
+                if len(args) == 1:
+                    index = int(args.pop(0))
+
+                    quote = quotes.get(index, None)
+
+                    if quote is None:
+                        return "This quote does not exist."
+                    else:
+                        owner = str(discord.utils.get(server.members, id=quote["owner"]))
+                        channel = str(discord.utils.get(server.channels, id=quote["channel"]))
+                        date = str(quote["datetime"])
+                        text = quote["text"]
+                        if text is None:
+                            text = "Message Deleted."
+
+                        return "```Text: {}\nOwner: {}\nChannel Created in: {}\nDate of creation: {}```"\
+                            .format(text, owner, channel, date)
+
+                else:
+                    return "Error: Unexpected number of arguments.\n" \
+                           "Should be `$>quote info [quote number here]"
+
+            if mode == "chown":
+                if len(args) == 2:
+                    index = int(args.pop(0))
+                    new_owner = await carlbot.modules.command_parsing.get_user(args, server)
+
+                    quote = quotes.get(index, None)
+
+                    if quote is None:
+                        return "This quote does not exist."
+                    else:
+                        owner = quote["owner"]
+
+                        if owner == message.author.id or\
+                                await carlbot.modules.authority\
+                                .check_authority(server.id, message.author, "quote_admin"):
+
+                            quote["owner"] = new_owner.id
+
+                            return "Owner changed."
+                        else:
+                            return "Only the owner of this quote or someone with the `quote_admin` "\
+                                   "authority can change the owner of this quote."
                 else:
                     return "Error: Unexpected number of arguments.\n" \
                            "Should be `$>quote edit [quote number here] "\
