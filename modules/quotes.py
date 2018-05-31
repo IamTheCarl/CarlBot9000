@@ -3,6 +3,7 @@ import datetime
 import requests
 import tempfile
 import re
+import random
 
 
 class Quotes(carlbot.Module):
@@ -34,8 +35,8 @@ class Quotes(carlbot.Module):
                    "using quotes.\nIt was probably your own fault and you deserved it."
 
         if len(args) < 1:
-            return "Usage: $>{} add|edit|remove|delete_all|setup|<quote#>\nPlease see Carl Bot Wiki for more details."\
-                .format(name)
+            return "Usage: $>{} add|edit|remove|delete_all|setup|random|<quote#>"\
+                   "\nPlease see Carl Bot Wiki for more details.".format(name)
 
         data = carlbot.modules.persistence.get_server_data(self, server.id)
         quotes = data.get("quotes", None)
@@ -76,14 +77,25 @@ class Quotes(carlbot.Module):
                     return "You need the authority `infinity_gauntlet_of_quotes` to do this. Being admin does not "\
                            "qualify for this authority."
 
+            if quotes is None:
+                return "Quote system has not been setup for this server.\n"\
+                       "Have someone with the quote_admin authority do it."
+
+            if index_string == "random":
+                text = None
+                index = 0
+
+                while text is None:
+                    index = random.randint(0, len(quotes) - 1)
+                    text = quotes[index]["text"]
+
+                # Put a bullet in front to not trigger commands.
+                return "\U00002022 {}".format(text)
+
             try:
                 index = int(index_string)
             except ValueError:
                 return "Failed to read quote number."
-
-            if quotes is None:
-                return "Quote system has not been setup for this server.\n"\
-                       "Have someone with the quote_admin authority do it."
 
             quote = quotes.get(index, None)
 
