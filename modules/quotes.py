@@ -254,9 +254,9 @@ class Quotes(carlbot.Module):
 
         url = attachments[0]["url"]
 
-        net_source = await carlbot.aiohttp_session.get(url)
         with tempfile.SpooledTemporaryFile() as source:
-            source.write(bytes(net_source.text, "utf-8"))
+            async with carlbot.aiohttp_session.get(url) as net_source:
+                source.write(bytes(await net_source.text(), "utf-8"))
             source.seek(0)
 
             quotes = {
