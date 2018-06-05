@@ -1,5 +1,6 @@
 import carlbot
 import discord
+import re
 from datetime import timedelta
 
 
@@ -75,5 +76,52 @@ class CommandParsing(carlbot.Module):
                 return discord.utils.get(server.roles, id=a[3:-1])
             else:  # Is a user.
                 return discord.utils.get(server.members, id=a[2:-1])
+
+    @staticmethod
+    async def clean_message(server, text):
+        if text is None:
+            return None
+
+        transformations = {
+            re.escape('<#{0.id}>'.format(channel)): '#' + channel.name
+            for channel in server.channels
+        }
+
+        mention_transforms = {
+            re.escape('<@{0.id}>'.format(member)): '@' + member.display_name
+            for member in server.members
+        }
+
+        # add the <@!user_id> cases as well..
+        second_mention_transforms = {
+            re.escape('<@!{0.id}>'.format(member)): '@' + member.display_name
+            for member in server.members
+        }
+
+        transformations.update(mention_transforms)
+        transformations.update(second_mention_transforms)
+
+        role_transforms = {
+            re.escape('<@&{0.id}>'.format(role)): '@' + role.name
+            for role in server.roles
+        }
+        transformations.update(role_transforms)
+
+        def repl(obj):
+            return transformations.get(re.escape(obj.group(0)), '')
+
+        pattern = re.compile('|'.join(transformations.keys()))
+        result = pattern.sub(repl, text)
+
+        transformations = {
+            '@everyone': '@\u200beveryone',
+            '@here': '@\u200bhere'
+        }
+
+        def repl2(obj):
+            return transformations.get(obj.group(0), '')
+
+        pattern = re.compile('|'.join(transformations.keys()))
+        return pattern.sub(repl2, result)
 
 carlbot.add_module(CommandParsing())

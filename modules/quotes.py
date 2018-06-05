@@ -1,6 +1,6 @@
 import carlbot
 import datetime
-import requests
+import json
 import tempfile
 import re
 import random
@@ -21,7 +21,8 @@ class Quotes(carlbot.Module):
 
     def public_commands(self):
         return [("quote", self.quote),
-                ("import_nitori", self.import_nitori)]
+                ("import_nitori", self.import_nitori),
+                ("export_quotes", self.export_quotes)]
 
     @staticmethod
     def authorities():
@@ -253,7 +254,7 @@ class Quotes(carlbot.Module):
 
         url = attachments[0]["url"]
 
-        net_source = requests.get(url)
+        net_source = await carlbot.aiohttp_session.get(url)
         with tempfile.SpooledTemporaryFile() as source:
             source.write(bytes(net_source.text, "utf-8"))
             source.seek(0)
@@ -307,5 +308,40 @@ class Quotes(carlbot.Module):
                     quote = {}
 
         return "Done."
+
+    async def export_quotes(self, args, server, channel, message):
+        data = carlbot.modules.persistence.get_server_data(self, server.id)
+        quotes = data.get("quotes", None)
+
+        await carlbot.client.send_message(channel, "Working...")
+
+        if quotes:
+            with tempfile.NamedTemporaryFile() as export:
+
+                data = []
+
+                for key, quote in quotes.items():
+                    data.append({
+                        "number": key,
+                        "datetime": str(quote["datetime"]),
+                        "text": {
+                            "machine": quote["text"],
+                            "human": await carlbot.modules.command_parsing.clean_message(server, quote["text"])
+                        },
+                        "owner": {
+                            "machine": quote["owner"],
+                            "human": discord.utils.get(server.members, id=quote["owner"]).name
+                        }
+                    })
+                export.write(bytes(json.dumps(data, indent=4, sort_keys=True), "utf-8"))
+                export.flush()
+
+                await carlbot.client.send_file(channel,
+                                               export.name,
+                                               content="{} Done.".format(message.author.mention),
+                                               filename="QuotesFor-{}-Written-{}.json"\
+                                               .format(server.name, datetime.datetime.now()))
+        else:
+            return "Quotes are not setup."
 
 carlbot.add_module(Quotes())

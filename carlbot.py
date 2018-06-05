@@ -4,6 +4,7 @@ import os
 import sys
 import traceback
 import curses
+import aiohttp
 
 from abc import ABC, abstractmethod
 from botToken import BotToken
@@ -13,6 +14,7 @@ call_sign = "$>"
 
 client = discord.Client()
 _bot_globals = locals()
+aiohttp_session = None
 main_window = None
 
 ERROR_COLOR = 1
@@ -604,6 +606,8 @@ def main(std_screen):
     with open("log.log", "w") as _LOG:
         load_modules()
         print("Starting Carl Bot...")
+        global aiohttp_session
+        aiohttp_session = aiohttp.ClientSession(loop=client.loop)
         client.run(BotToken.token)
 
 if __name__ == "__main__":
