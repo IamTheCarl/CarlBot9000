@@ -321,16 +321,23 @@ class Quotes(carlbot.Module):
                 data = []
 
                 for key, quote in quotes.items():
+                    human_owner_name = discord.utils.get(server.members, id=quote.get("owner", None))
+                    if human_owner_name:
+                        human_owner_name = human_owner_name.name
+                    else:
+                        human_owner_name = None
+                                                                                                
+
                     data.append({
                         "number": key,
-                        "datetime": str(quote["datetime"]),
+                        "datetime": str(quote.get("datetime", None)),
                         "text": {
-                            "machine": quote["text"],
-                            "human": await carlbot.modules.command_parsing.clean_message(server, quote["text"])
+                            "machine": quote.get("text", None),
+                            "human": await carlbot.modules.command_parsing.clean_message(server, quote.get("text", None))
                         },
                         "owner": {
-                            "machine": quote["owner"],
-                            "human": discord.utils.get(server.members, id=quote["owner"]).name
+                            "machine": quote.get("owner", None),
+                            "human": human_owner_name
                         }
                     })
                 export.write(bytes(json.dumps(data, indent=4, sort_keys=True), "utf-8"))
