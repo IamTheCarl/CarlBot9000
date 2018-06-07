@@ -1,7 +1,19 @@
 import carlbot
+import random
 
 
 class Pelt(carlbot.Module):
+    pelt_items = [
+        "\U0001F95C",  # Peanut.
+        "\U0001F45E",  # Man's Shoe.
+        "\U0001F45F",  # Athletic Shoe.
+        "\U0001F58D",  # Crayon
+        "\U0001F954",  # Potato
+        "\U0001F4D8",  # Blue Book
+        "\U0001F4B5",  # Money
+        "\U0001F32D"   # Hotdog
+    ]
+
     def __init__(self):
         super().__init__()
 
@@ -61,6 +73,7 @@ class Pelt(carlbot.Module):
             data["targets"] = targets
 
         if message.author.id in targets:
-            await carlbot.client.add_reaction(message, "\U0001F95C")
+            item = self.pelt_items[max(random.randint(-100, len(self.pelt_items) - 1), 0)]
+            await carlbot.client.add_reaction(message, item)
 
 carlbot.add_module(Pelt())
