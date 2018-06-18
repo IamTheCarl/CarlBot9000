@@ -5,3 +5,5 @@ botToken.py
 database.db
 database/*
 owners.txt
+
+.idea/*
