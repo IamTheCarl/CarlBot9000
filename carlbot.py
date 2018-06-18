@@ -261,7 +261,9 @@ def add_module(module):
     if background_task:
         client.loop.create_task(background_task())
 
+    # For each public command in the module.
     for command_name, command in module.public_commands():
+        # 'Load' the public command into here.
         public_commands[command_name] = command
 
     for command_name, command in module.private_commands():

@@ -31,18 +31,22 @@ class Quotes(carlbot.Module):
     async def quote(self, args, server, channel, message):
         name = args.pop(0)  # Remove command name.
 
+        # User is a pleb without perms to quote.
         if await carlbot.modules.authority\
                 .check_authority(server.id, message.author, "quote_scrub", admin_override=False):
             return "You have the `quote_scrub` authority, meaning that the admins of this server have banned you from "\
                    "using quotes.\nIt was probably your own fault and you deserved it."
 
+        # No argument was given.
         if len(args) < 1:
             return "Usage: $>{} add|edit|remove|delete_all|setup|random|<quote#>"\
                    "\nPlease see Carl Bot Wiki for more details.".format(name)
 
+        # Fetch data from teh server, all the quotes.
         data = carlbot.modules.persistence.get_server_data(self, server.id)
         quotes = data.get("quotes", None)
 
+        # If only one argument was given.
         if len(args) == 1:
             pass
 
@@ -119,10 +123,18 @@ class Quotes(carlbot.Module):
                 return "Quote system is not yet setup."
 
             if mode == "add":
+
+                quote_msg = args.pop(0)
+                # If this quote mentions everybody!
+                if message.mention_everyone:
+                    # Place all occurrences of '@everyone' in code-wraps
+                    # to prevent @everyone mentions when using this quote.
+                    quote_msg = quote_msg.replace("@everyone", "`@everyone`")
+
                 if len(args) == 1:
                     index = len(quotes)
                     quotes[index] = {
-                        "text": args.pop(0),
+                        "text": quote_msg,
                         "owner": message.author.id,
                         "channel": channel.id,
                         "datetime": datetime.datetime.now()
