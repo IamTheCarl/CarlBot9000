@@ -1,7 +1,3 @@
-*__pycache__/*
-log-crash.log
-log.log
-botToken.py
-database.db
-database/*
+botToken.txt
 owners.txt
+out/*
