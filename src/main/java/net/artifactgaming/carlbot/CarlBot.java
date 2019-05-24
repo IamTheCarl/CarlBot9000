@@ -1,7 +1,8 @@
 package net.artifactgaming.carlbot;
 
 import net.artifactgaming.carlbot.modules.Echo;
-import net.artifactgaming.carlbot.modules.listeners.MessageReader;
+import net.artifactgaming.carlbot.listeners.MessageReader;
+import net.artifactgaming.carlbot.modules.Quotes;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -14,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class CarlBot extends ListenerAdapter implements Runnable {
@@ -23,7 +23,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
     private ArrayList<Module> modules = new ArrayList<>();
 
     private ArrayList<MessageReader> messageReaders = new ArrayList<>();
-    private HashMap<String, Command> commands = new HashMap<>();
+    private CommandContainer commands = new CommandContainer();
 
     private String callsign = "$>";
 
@@ -32,6 +32,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.getTokenFromFile("./botToken.txt");
 
         bot.addModule(new Echo());
+        bot.addModule(new Quotes());
 
         bot.run();
     }
@@ -45,9 +46,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         System.out.println("Added module: " + module.getClass().getCanonicalName());
 
         for (Command command : module.getCommands()) {
-            String callsign = command.getCallsign();
-            commands.put(callsign, command);
-
+            String callsign = commands.addCommand(command);
             System.out.println("Added command with callsign: " + callsign);
         }
 
@@ -98,22 +97,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
                 String substring = rawContent.substring(callsign.length());
                 List<String> tokens = ShellSplitter.shellSplit(substring);
 
-                // Need to actually have a command.
-                if (tokens.size() > 0) {
-                    String callsign = tokens.get(0);
-
-                    Command command = commands.get(callsign);
-
-                    // Find command.
-                    if (command != null) {
-                        command.runCommand(event, rawContent, tokens);
-                    } else {
-                        event.getChannel().sendMessage("Error: Unknown command \"" + callsign + "\".").queue();
-                    }
-
-                } else {
-                    event.getChannel().sendMessage("Error: No command name given.").queue();
-                }
+                commands.runCommand(event, rawContent, tokens);
             }
         }
     }

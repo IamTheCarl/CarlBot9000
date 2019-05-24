@@ -1,4 +1,4 @@
-package net.artifactgaming.carlbot.modules.listeners;
+package net.artifactgaming.carlbot.listeners;
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 

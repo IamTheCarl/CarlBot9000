@@ -21,16 +21,9 @@ public class Echo implements Module {
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
             String message = "[";
-            boolean isCallsign = true;
 
             for (String token : tokens) {
-
-                // We don't want to include the callsign.
-                if (!isCallsign) {
-                    message += token + " ";
-                } else {
-                    isCallsign = false;
-                }
+                message += token + " ";
             }
 
             if (message.length() > 1) {
