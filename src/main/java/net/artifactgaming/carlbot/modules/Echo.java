@@ -2,6 +2,9 @@ package net.artifactgaming.carlbot.modules;
 
 import net.artifactgaming.carlbot.Command;
 import net.artifactgaming.carlbot.Module;
+import net.artifactgaming.carlbot.Utils;
+import net.dv8tion.jda.core.MessageBuilder;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import java.util.List;
@@ -35,6 +38,9 @@ public class Echo implements Module {
             }
 
             message += "]";
+
+            // Clean the message up so it can't ping @everyone.
+            message = Utils.cleanMessage(event.getAuthor(), message);
 
             event.getChannel().sendMessage(message).queue();
         }
