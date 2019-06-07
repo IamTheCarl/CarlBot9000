@@ -19,7 +19,7 @@ dependencies {
     compile "org.slf4j:slf4j-api:1.7.26"
     compile "org.slf4j:slf4j-simple:1.7.26"
 
-    //compile group: 'javax.persistence', name: 'persistence-api', version: '1.0'
     compile group: 'com.h2database', name: 'h2', version: '1.4.199'
+    compile 'ca.krasnay:sqlbuilder:1.2'
 
 }
