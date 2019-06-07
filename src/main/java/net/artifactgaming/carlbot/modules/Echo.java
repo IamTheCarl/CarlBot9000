@@ -1,10 +1,9 @@
 package net.artifactgaming.carlbot.modules;
 
+import net.artifactgaming.carlbot.CarlBot;
 import net.artifactgaming.carlbot.Command;
 import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.Utils;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import java.util.List;
@@ -19,7 +18,7 @@ public class Echo implements Module {
         }
 
         @Override
-        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             String message = "[";
 
             for (String token : tokens) {
@@ -40,7 +39,12 @@ public class Echo implements Module {
     }
 
     @Override
-    public Command[] getCommands() {
+    public void setup(CarlBot carbot) {
+
+    }
+
+    @Override
+    public Command[] getCommands(CarlBot carlbot) {
         return new Command[] {new EchoCommand()};
     }
 }

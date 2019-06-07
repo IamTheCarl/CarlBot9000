@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot;
 
 public interface Module {
-    Command[] getCommands();
+    void setup(CarlBot carlbot);
+    Command[] getCommands(CarlBot carlbot);
 }

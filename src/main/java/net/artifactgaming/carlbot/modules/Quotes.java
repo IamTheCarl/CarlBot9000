@@ -1,9 +1,6 @@
 package net.artifactgaming.carlbot.modules;
 
-import net.artifactgaming.carlbot.Command;
-import net.artifactgaming.carlbot.CommandContainer;
-import net.artifactgaming.carlbot.Module;
-import net.artifactgaming.carlbot.Utils;
+import net.artifactgaming.carlbot.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import java.util.List;
@@ -18,7 +15,7 @@ public class Quotes implements Module {
         }
 
         @Override
-        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             event.getChannel().sendMessage("Add command issued.").queue();
         }
     }
@@ -31,7 +28,7 @@ public class Quotes implements Module {
         }
 
         @Override
-        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             event.getChannel().sendMessage("Remove command issued.").queue();
         }
     }
@@ -44,8 +41,8 @@ public class Quotes implements Module {
         }
 
         @Override
-        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
-            event.getChannel().sendMessage("Setup command issued.").queue();
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            event.getChannel().sendMessage("setup command issued.").queue();
         }
     }
 
@@ -57,7 +54,7 @@ public class Quotes implements Module {
         }
 
         @Override
-        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             event.getChannel().sendMessage("Delete all command issued.").queue();
         }
     }
@@ -70,16 +67,18 @@ public class Quotes implements Module {
         }
 
         @Override
-        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             event.getChannel().sendMessage("Random command issued.").queue();
         }
     }
 
     private class QuoteCommand implements Command {
 
-        private CommandContainer commands = new CommandContainer();
+        private CommandHandler commands;
 
-        QuoteCommand() {
+        QuoteCommand(CarlBot carlbot) {
+            commands = new CommandHandler(carlbot);
+
             commands.setSubName(this.getCallsign());
             commands.addCommand(new AddCommand());
             commands.addCommand(new RemoveCommand());
@@ -94,7 +93,7 @@ public class Quotes implements Module {
         }
 
         @Override
-        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
 
             // First check if its a number.
             if (tokens.size() > 0) {
@@ -116,7 +115,12 @@ public class Quotes implements Module {
     }
 
     @Override
-    public Command[] getCommands() {
-        return new Command[] {new QuoteCommand()};
+    public void setup(CarlBot carbot) {
+
+    }
+
+    @Override
+    public Command[] getCommands(CarlBot carlbot) {
+        return new Command[] { new QuoteCommand(carlbot) };
     }
 }
