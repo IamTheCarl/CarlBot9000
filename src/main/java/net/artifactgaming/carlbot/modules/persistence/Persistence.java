@@ -19,6 +19,12 @@ public class Persistence implements Module {
     JdbcDataSource server;
     Logger logger = LoggerFactory.getLogger(Persistence.class);
 
+    // A list of all tables is kept in this table.
+    Table tableOfTables;
+
+    // A list of all columns and their tables is kept in this table.
+    Table tableOfColumns;
+
     private Table users;
     private Table guilds;
 
@@ -31,17 +37,18 @@ public class Persistence implements Module {
             Server.createWebServer("-web", "-webAllowOthers", "-webPort", "8082").start();
             logger.warn("Enabled database interface webserver.");
         }
-        users = new Table(this, "carlbot_users");
-        guilds = new Table(this, "carlbot_guilds");
+
+        tableOfTables = new Table(this, "INFORMATION_SCHEMA.TABLES");
+        tableOfColumns = new Table(this, "INFORMATION_SCHEMA.COLUMNS");
+        users = new Table(this, "CARLBOT_USERS");
+        guilds = new Table(this, "CARLBOT_GUILDS");
     }
 
     @Override
     public void setup(CarlBot carlbot) {
         List<Module> modules = carlbot.getModules();
 
-        ArrayList<TableColumn> columns = new ArrayList<>();
-
-        columns.add(new TableColumn("discord_id", TableColumn.Type.CharString));
+        //columns.add(new TableColumn("discord_id", TableColumn.Type.CharString));
 
         for (Module module : modules) {
             if (module instanceof PersistentModule) {
@@ -51,12 +58,15 @@ public class Persistence implements Module {
         }
 
         try {
-            users.setColumns(columns);
-            users.createTable();
+            if (!users.exists()) {
+                users.create();
+                users.alter().add().pushValue("discord_id varchar").execute();
+            }
 
-            guilds.setColumns(columns);
-            guilds.createTable();
-
+            if (!guilds.exists()) {
+                guilds.create();
+                guilds.alter().add().pushValue("discord_id varchar").execute();
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -65,15 +75,14 @@ public class Persistence implements Module {
     public Table getGuildTable(String guildID, PersistentModule module) throws SQLException {
         String moduleName = module.getClass().getCanonicalName();
 
-        Table table = new Table(this, "GUILD_" + guildID + ":" + moduleName);
+        Table table = new Table(this, "\"GUILD_" + guildID + ":" + moduleName.toUpperCase() + "\"");
         // You don't have to create the table for it to be a parent.
 
-        // We're going to add this server to our list of known servers though.
-
-        List<RowColumn> row = new ArrayList<>();
-        row.add(new RowColumn("discord_id", guildID));
-
-        guilds.addRow(row);
+        // We're going to add this server to our list of known servers though, but only if it's not already there.
+        ResultSet resultSet = guilds.select().column("*").where("'DISCORD_ID'='" + guildID + "'").execute();
+        if (!resultSet.next()) {
+            guilds.insert().set("\"DISCORD_ID\"", guildID).execute();
+        }
 
         return table;
     }
@@ -82,7 +91,7 @@ public class Persistence implements Module {
         return getGuildTable(guild.getId(), module);
     }
 
-    static String cleanSQL(String input) {
+    public static String cleanSQL(String input) {
         return input.replaceAll("\\^[a-zA-Z_\\-]+$", "");
     }
 

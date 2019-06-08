@@ -1,7 +1,5 @@
 package net.artifactgaming.carlbot.modules.authority;
 
-import ca.krasnay.sqlbuilder.InsertBuilder;
-import ca.krasnay.sqlbuilder.SelectBuilder;
 import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.modules.persistence.*;
 import net.dv8tion.jda.core.entities.Guild;
@@ -24,8 +22,6 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
 
     private Persistence persistence;
     private AuthorityManagement manager = this;
-
-    private List<TableColumn> columns = new ArrayList<>();
 
     @Override
     public Authority[] getRequiredAuthority() {
@@ -67,9 +63,12 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
     private Table getAuthorityTable(Guild guild) throws SQLException {
         Table table = persistence.getGuildTable(guild, manager);
         Table authorityTable = new Table(table, "authority_bindings");
-        authorityTable.setColumns(columns);
 
-        authorityTable.createTable(); // Make sure it exists.
+        if (!authorityTable.exists()) {
+            authorityTable.create(); // Make sure it exists.
+
+            authorityTable.alter().add().pushValue("discord_id varchar").execute();
+        }
 
         return authorityTable;
     }
@@ -78,12 +77,12 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
 
         @Override
         public String getCallsign() {
-            return "add";
+            return "set";
         }
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
-            if (tokens.size() == 2) {
+            if (tokens.size() == 3) {
                 String discordId = Utils.getMemberOrRoleFromMessage(event, tokens.get(0));
 
                 if (discordId != null) {
@@ -91,10 +90,37 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
 
                     if (authority == null) {
                         event.getChannel().sendMessage("Could not find requested authority.").queue();
-                    } else {
-                        addAuthority(discordId, authority, event.getGuild());
-                        event.getChannel().sendMessage("Authority added.").queue();
+                        return;
                     }
+
+                    String value = tokens.get(2);
+
+                    switch (tokens.get(2)) {
+                        case "give":
+                        case "deny":
+                        case "ignore":
+                            break; // No problem, these are all valid authorities.
+                        default:
+                            // Problem, what is this thing?
+                            event.getChannel()
+                                    .sendMessage("Authority status must be give, deny, or ignore.").queue();
+                            return;
+                    }
+
+                    Table table = getAuthorityTable(event.getGuild());
+                    String authorityName = authority.getClass().getCanonicalName();
+
+                    // Make sure the column exists.
+                    if (!table.columnExists(authorityName)) {
+                        table.alter().add().pushValue("\"" + authorityName + "\" varchar").execute();
+                    }
+
+                    // Check if our row exists. If not, make it exist.
+                    ResultSet resultSet = table.select().column("*").where("discord_id=" + discordId).execute();
+                    if (!resultSet.next()) {
+                        table.insert().set("discord_id", discordId).execute();
+                    }
+
                 } else {
                     event.getChannel().sendMessage("Could not find member or role.").queue();
                 }
@@ -143,11 +169,9 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
 
         Table table = getAuthorityTable(guild);
 
-        SelectBuilder builder = new SelectBuilder();
-        builder.column("*")
-                .where("\"discord_id\"='" + id +"'");
-
-        ResultSet resultSet = table.select(builder);
+        SelectBuilder builder = table.select();
+        builder.column("*").where("\"discord_id\"='" + id +"'");
+        ResultSet resultSet = builder.execute();
 
         while (resultSet.next()) {
             boolean permission = resultSet.getBoolean(authorityName);
@@ -208,15 +232,6 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         return authority;
     }
 
-    private void addAuthority(String discordId, Authority authority, Guild guild) throws SQLException {
-        Table table = getAuthorityTable(guild);
-        InsertBuilder builder = new ca.krasnay.sqlbuilder.InsertBuilder(table.getSQL());
-
-        builder.set("\"discord_id\"", discordId);
-        builder.set('"' + authority.getClass().getCanonicalName() + '"', "1");
-        table.insert(builder);
-    }
-
     @Override
     public void setup(CarlBot carlbot) {
 
@@ -242,12 +257,6 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                     logger.info("Registered authority: " + authority.getClass().getCanonicalName());
                 }
             }
-        }
-
-        columns.add(new TableColumn("discord_id", TableColumn.Type.CharString));
-
-        for (String name : authorities_absolute.keySet()) {
-            columns.add(new TableColumn(name, TableColumn.Type.Bit));
         }
 
         carlbot.addCommandPermissionChecker((MessageReceivedEvent event, Command command)->{
