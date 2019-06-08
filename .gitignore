@@ -2,6 +2,8 @@ botToken.txt
 owners.txt
 out/*
 .gradle/*
+gradle/*
 .idea/workspace.xml
 *.db
 build/*
+gradlew*
