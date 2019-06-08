@@ -98,6 +98,10 @@ public class Table {
         return new AlterBuilder(this);
     }
 
+    public UpdateBuilder update() {
+        return new UpdateBuilder(this);
+    }
+
     public String getName() {
         return tableName;
     }

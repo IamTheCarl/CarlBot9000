@@ -96,10 +96,16 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                     String value = tokens.get(2);
 
                     switch (tokens.get(2)) {
+                        // No problem, these are all valid authority modes.
                         case "give":
+                            value = "true";
+                            break;
                         case "deny":
+                            value = "false";
+                            break;
                         case "ignore":
-                            break; // No problem, these are all valid authorities.
+                            value = "null";
+                            break;
                         default:
                             // Problem, what is this thing?
                             event.getChannel()
@@ -120,6 +126,9 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                     if (!resultSet.next()) {
                         table.insert().set("discord_id", discordId).execute();
                     }
+
+                    table.update().set("\"" + authorityName + "\"=" + value).where("discord_id=" + discordId).execute();
+                    event.getChannel().sendMessage("Authority status set.").queue();
 
                 } else {
                     event.getChannel().sendMessage("Could not find member or role.").queue();

@@ -5,18 +5,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class InsertBuilder extends ca.krasnay.sqlbuilder.InsertBuilder implements SQLBuilder {
+public class UpdateBuilder extends ca.krasnay.sqlbuilder.UpdateBuilder implements SQLBuilder {
 
     Table table;
 
-    /**
-     * Constructor.
-     *
-     * @param table The table we will be inserting into.
-     */
-    InsertBuilder(Table table) {
+    UpdateBuilder(Table table) {
         super(table.getName());
-
         this.table = table;
     }
 
@@ -33,7 +27,12 @@ public class InsertBuilder extends ca.krasnay.sqlbuilder.InsertBuilder implement
     }
 
     @Override
-    public InsertBuilder set(String column, String value) {
-        return (InsertBuilder) super.set(column, value);
+    public UpdateBuilder set(String expr) {
+        return (UpdateBuilder) super.set(expr);
+    }
+
+    @Override
+    public UpdateBuilder where(String expr) {
+        return (UpdateBuilder) super.where(expr);
     }
 }
