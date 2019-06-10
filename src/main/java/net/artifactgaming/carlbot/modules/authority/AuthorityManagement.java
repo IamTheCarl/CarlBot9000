@@ -72,6 +72,9 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                         for (Role role : member.getRoles()) {
                             listAuthorities(role.getId(), giveAuthority, denyAuthority, table);
                         }
+
+                        // Don't forget the everyone role.
+                        listAuthorities(member.getGuild().getPublicRole().getId(), giveAuthority, denyAuthority, table);
                     }
 
                     String message = "Authority given:\n```\n";
@@ -322,7 +325,9 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
      */
     public boolean checkHasAuthority(Member member, Authority authority, boolean ignoreOwner) throws SQLException {
         // Do we even need to check?
-        if (ignoreOwner || !member.isOwner()) {
+        if (!ignoreOwner && member.isOwner()) {
+            return true;
+        } else {
 
             Guild guild = member.getGuild();
 
@@ -342,10 +347,17 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                         return false;
                     }
                 }
+
+                // Check if the everyone role has it.
+                AuthorityState state = checkAuthorityRaw(member.getGuild().getPublicRole().getId(), guild, authority);
+                if (state == AuthorityState.Give) {
+                    return true;
+                }
+
+                // Nothing could give the authority. Assume they don't have it.
+                return false;
             }
         }
-
-        return true;
     }
 
     /**

@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot.modules.persistence;
 
+import org.h2.command.dml.Delete;
 import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 
@@ -86,21 +87,17 @@ public class Table {
         logger.debug("Created table: " + tableName);
     }
 
-    public SelectBuilder select() {
-        return new SelectBuilder(this);
-    }
+    public SelectBuilder select() { return new SelectBuilder(this); }
 
-    public InsertBuilder insert() throws SQLException {
-        return new InsertBuilder(this);
-    }
+    public InsertBuilder insert() throws SQLException { return new InsertBuilder(this); }
 
-    public AlterBuilder alter() {
-        return new AlterBuilder(this);
-    }
+    public AlterBuilder alter() { return new AlterBuilder(this); }
 
     public UpdateBuilder update() {
         return new UpdateBuilder(this);
     }
+
+    public DeleteBuilder delete() { return new DeleteBuilder(this); }
 
     public String getName() {
         return tableName;

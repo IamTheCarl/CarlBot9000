@@ -2,7 +2,7 @@ package net.artifactgaming.carlbot;
 
 import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.listeners.MessageReader;
-import net.artifactgaming.carlbot.modules.Quotes;
+import net.artifactgaming.carlbot.modules.Quotes.Quotes;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.dv8tion.jda.core.AccountType;

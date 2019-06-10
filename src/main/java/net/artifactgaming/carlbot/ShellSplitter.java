@@ -24,7 +24,9 @@ public class ShellSplitter {
                 quoteChar = c;
             } else if (!quoting && Character.isWhitespace(c)) {
                 if (current.length() > 0) {
-                    tokens.add(current.toString());
+                    // The replaceAll is to sanatize things for SQL. We want to idiot proof the modules as much as
+                    // possible since they are going to be implemented by 3rd parties.
+                    tokens.add(current.toString().replaceAll("\\^[a-zA-Z_\\-]+$", ""));
                     current = new StringBuilder();
                 }
             } else {
