@@ -1,6 +1,5 @@
 package net.artifactgaming.carlbot.modules.persistence;
 
-import org.h2.command.dml.Delete;
 import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 
@@ -8,9 +7,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class Table {
 
@@ -46,7 +42,7 @@ public class Table {
         this.tableName = this.tableName.toUpperCase();
     }
 
-    private String getNameSQLForm() {
+    String getNameSQLForm() {
         // Do we need to shave off the quotes?
         if (tableName.endsWith("\"")) {
             return tableName.substring(1, tableName.length() - 1);
@@ -58,7 +54,7 @@ public class Table {
     public boolean exists() throws SQLException {
 
         ResultSet results = database.tableOfTables.select()
-                .column("*").where("table_name='" + getNameSQLForm() + "'").execute();
+                .column("*").where("table_name", "=", getNameSQLForm()).execute();
 
         boolean exists = results.next();
         results.close();
@@ -69,8 +65,8 @@ public class Table {
     public boolean columnExists(String columnName) throws SQLException {
 
         ResultSet results = database.tableOfColumns.select().column("*")
-                .where("TABLE_NAME='" + getNameSQLForm() + "'")
-                .where("COLUMN_NAME='" + columnName + "'").execute();
+                .where("TABLE_NAME", "=",getNameSQLForm())
+                .where("COLUMN_NAME", "=",columnName).execute();
 
         boolean exists = results.next();
         results.close();
@@ -89,7 +85,7 @@ public class Table {
 
     public SelectBuilder select() { return new SelectBuilder(this); }
 
-    public InsertBuilder insert() throws SQLException { return new InsertBuilder(this); }
+    public InsertBuilder insert() { return new InsertBuilder(this); }
 
     public AlterBuilder alter() { return new AlterBuilder(this); }
 

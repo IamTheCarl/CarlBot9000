@@ -1,7 +1,5 @@
 package net.artifactgaming.carlbot.modules.persistence;
 
-import ca.krasnay.sqlbuilder.AbstractSqlBuilder;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,12 +7,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AlterBuilder extends AbstractSqlBuilder implements SQLBuilder {
+public class AlterBuilder implements SQLBuilder {
 
-    Table table;
-    String mode = "";
+    private Table table;
+    private String mode = "";
 
-    List<String> values = new ArrayList<>();
+    private List<String> values = new ArrayList<>();
 
     AlterBuilder(Table table) {
         this.table = table;
@@ -56,7 +54,7 @@ public class AlterBuilder extends AbstractSqlBuilder implements SQLBuilder {
             sql.append("(");
         }
 
-        appendList(sql, values, "", ", ");
+        SQLBuilder.appendList(sql, values, "", ", ");
 
         if (needBrackets) {
             sql.append(")");

@@ -42,7 +42,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                 Table table = getQuoteTable(event.getGuild());
 
                 // First we check if the quote already exists.
-                ResultSet resultSet = table.select().column("*").where("key='" + tokens.get(0) + "'").execute();
+                ResultSet resultSet = table.select().column("*").where("key", "=",tokens.get(0)).execute();
 
                 if (resultSet.next()) {
                     event.getChannel().sendMessage("A quote already exists for this key. "
@@ -50,9 +50,9 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                 } else {
                     User author = event.getMessage().getAuthor();
                     table.insert().set("owner", author.getId())
-                                  .set("owner_name", "'" + Persistence.cleanSQL(author.getName()) + "'")
-                                  .set("key", "'" + Persistence.cleanSQL(tokens.get(0)) + "'")
-                                  .set("quote", "'" + tokens.get(1) + "'").execute();
+                                  .set("owner_name", author.getName())
+                                  .set("key", tokens.get(0))
+                                  .set("quote", tokens.get(1)).execute();
 
                     event.getChannel().sendMessage("Quote added to database.").queue();
                 }
@@ -82,14 +82,14 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                 Table table = getQuoteTable(event.getGuild());
 
                 // First we check if the quote already exists.
-                ResultSet resultSet = table.select().column("*").where("key='" + tokens.get(0) + "'").execute();
+                ResultSet resultSet = table.select().column("*").where("key", "=", tokens.get(0)).execute();
 
                 if (resultSet.next()) {
                     if (event.getAuthor().getId().equals(resultSet.getString("owner"))
                             || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
 
                         table.delete()
-                                .where("key='" + tokens.get(0) + "'")
+                                .where("key", "=", tokens.get(0))
                                 .execute();
 
                         event.getChannel().sendMessage("Quote deleted.").queue();
@@ -169,7 +169,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             if (tokens.size() == 1) {
                 Table table = getQuoteTable(event.getGuild());
-                ResultSet resultSet = table.select().column("*").where("key='" + tokens.get(0) + "'").execute();
+                ResultSet resultSet = table.select().column("*").where("key", "=",tokens.get(0))
+                        .execute();
 
                 if (resultSet.next()) {
                     String message = "Quote:\n```\n" + resultSet.getString("quote") + "\n```\n";
@@ -213,7 +214,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                 Table table = getQuoteTable(event.getGuild());
 
                 // First we check if the quote already exists.
-                ResultSet resultSet = table.select().column("*").where("key='" + tokens.get(0) + "'").execute();
+                ResultSet resultSet = table.select().column("*").where("key", "=",tokens.get(0))
+                        .execute();
 
                 if (resultSet.next()) {
 
@@ -221,8 +223,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                             || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
 
                         table.update()
-                                .set("quote='" + tokens.get(1) + "'")
-                                .where("key='" + tokens.get(0) + "'")
+                                .set("quote", tokens.get(1))
+                                .where("key","=", tokens.get(0))
                                 .execute();
 
                         event.getChannel().sendMessage("Quote updated.").queue();
@@ -262,7 +264,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                 Table table = getQuoteTable(event.getGuild());
 
                 // First we check if the quote already exists.
-                ResultSet resultSet = table.select().column("*").where("key='" + tokens.get(0) + "'").execute();
+                ResultSet resultSet = table.select().column("*").where("key", "=",tokens.get(0))
+                        .execute();
 
                 if (resultSet.next()) {
 
@@ -270,8 +273,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                             || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
 
                         table.update()
-                                .set("owner='" + tokens.get(1) + "'")
-                                .where("key='" + tokens.get(0) + "'")
+                                .set("owner", tokens.get(1))
+                                .where("key", "=", tokens.get(0))
                                 .execute();
 
                         event.getChannel().sendMessage("Quote owner updated.").queue();
@@ -311,7 +314,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
             Table table = getQuoteTable(event.getGuild());
 
             if (!tokens.isEmpty()) {
-                ResultSet resultSet = table.select().column("quote").where("key='" + tokens.get(0) + "'").execute();
+                ResultSet resultSet = table.select().column("quote").where("key", "=", tokens.get(0))
+                        .execute();
 
                 if (resultSet.next()) {
                     event.getChannel().sendMessage("\"" + resultSet.getString("quote") + "\"").queue();

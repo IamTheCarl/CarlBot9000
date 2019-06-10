@@ -20,6 +20,4 @@ dependencies {
     compile "org.slf4j:slf4j-simple:1.7.26"
 
     compile group: 'com.h2database', name: 'h2', version: '1.4.199'
-    compile 'ca.krasnay:sqlbuilder:1.2'
-
 }

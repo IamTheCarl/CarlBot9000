@@ -1,18 +1,20 @@
 package net.artifactgaming.carlbot.modules.persistence;
 
-import ca.krasnay.sqlbuilder.SubSelectBuilder;
-
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Wraps Krasnay's select builder to be more friendly with how we manage our database.
+ * A rework of Krasnay's select builder to be more friendly with how we manage our database.
+ * https://github.com/jkrasnay/sqlbuilder
  */
-public class SelectBuilder extends ca.krasnay.sqlbuilder.SelectBuilder implements SQLBuilder {
+public class SelectBuilder implements SQLBuilder, Cloneable, Serializable {
 
-    Table table;
+    private Table table;
 
     SelectBuilder(Table table) {
         this.table = table;
@@ -25,93 +27,236 @@ public class SelectBuilder extends ca.krasnay.sqlbuilder.SelectBuilder implement
         PreparedStatement statement = connection.prepareStatement(this.toString());
 
         table.logger.debug("Run sql: " + this.toString());
-        ResultSet results = statement.executeQuery();
 
-        return results;
+        int i = 1;
+        for (String value : selectValues) {
+            statement.setString(i, value);
+            i++;
+        }
+
+        return statement.executeQuery();
     }
 
-    @Override
-    public SelectBuilder and(String expr) {
-        return (SelectBuilder) super.and(expr);
+    private static final long serialVersionUID = 1;
+
+    private boolean distinct;
+
+    private List<String> columns = new ArrayList<>();
+
+    private List<String> tables = new ArrayList<>();
+
+    private List<String> joins = new ArrayList<>();
+
+    private List<String> leftJoins = new ArrayList<>();
+
+    private List<String> wheres = new ArrayList<>();
+
+    private List<String> groupBys = new ArrayList<>();
+
+    private List<String> havings = new ArrayList<>();
+
+    private List<SelectBuilder> unions = new ArrayList<>();
+
+    private List<String> orderBys = new ArrayList<>();
+
+    private List<String> selectValues = new ArrayList<>();
+
+    private int limit = 0;
+
+    private int offset = 0;
+
+    private boolean forUpdate;
+
+    private boolean noWait;
+
+    /**
+     * Copy constructor. Used by {@link #clone()}.
+     *
+     * @param other
+     *            SelectBuilder being cloned.
+     */
+    protected SelectBuilder(SelectBuilder other) {
+
+        this.distinct = other.distinct;
+        this.forUpdate = other.forUpdate;
+        this.noWait = other.noWait;
+
+        for (String column : other.columns) {
+            this.columns.add(column);
+        }
+
+        this.tables.addAll(other.tables);
+        this.joins.addAll(other.joins);
+        this.leftJoins.addAll(other.leftJoins);
+        this.wheres.addAll(other.wheres);
+        this.groupBys.addAll(other.groupBys);
+        this.havings.addAll(other.havings);
+
+        for (SelectBuilder sb : other.unions) {
+            this.unions.add(sb.clone());
+        }
+
+        this.orderBys.addAll(other.orderBys);
     }
 
-    @Override
+    /**
+     * Alias for {@link #where(String,String,String)}.
+     */
+    public SelectBuilder and(String expr, String op, String value) {
+        return where(expr, op, value);
+    }
+
     public SelectBuilder column(String name) {
-        return (SelectBuilder) super.column(name);
+        columns.add(name);
+        return this;
     }
 
-    @Override
-    public SelectBuilder column(SubSelectBuilder subSelect) {
-        return (SelectBuilder) super.column(subSelect);
-    }
-
-    @Override
     public SelectBuilder column(String name, boolean groupBy) {
-        return (SelectBuilder) super.column(name, groupBy);
+        columns.add(name);
+        if (groupBy) {
+            groupBys.add(name);
+        }
+        return this;
+    }
+
+    public SelectBuilder limit(int limit, int offset) {
+        this.limit = limit;
+        this.offset = offset;
+        return this;
+    }
+
+    public SelectBuilder limit(int limit) {
+        return limit(limit, 0);
     }
 
     @Override
     public SelectBuilder clone() {
-        return (SelectBuilder) super.clone();
+        return new SelectBuilder(this);
     }
 
-    @Override
     public SelectBuilder distinct() {
-        return (SelectBuilder) super.distinct();
+        this.distinct = true;
+        return this;
     }
 
-    @Override
     public SelectBuilder forUpdate() {
-        return (SelectBuilder) super.forUpdate();
+        forUpdate = true;
+        return this;
     }
 
-    @Override
     public SelectBuilder from(String table) {
-        return (SelectBuilder) super.from(table);
+        tables.add(table);
+        return this;
     }
 
-    @Override
+    public List<SelectBuilder> getUnions() {
+        return unions;
+    }
+
     public SelectBuilder groupBy(String expr) {
-        return (SelectBuilder) super.groupBy(expr);
+        groupBys.add(expr);
+        return this;
     }
 
-    @Override
     public SelectBuilder having(String expr) {
-        return (SelectBuilder) super.having(expr);
+        havings.add(expr);
+        return this;
     }
 
-    @Override
     public SelectBuilder join(String join) {
-        return (SelectBuilder) super.join(join);
+        joins.add(join);
+        return this;
     }
 
-    @Override
     public SelectBuilder leftJoin(String join) {
-        return (SelectBuilder) super.leftJoin(join);
+        leftJoins.add(join);
+        return this;
     }
 
-    @Override
     public SelectBuilder noWait() {
-        return (SelectBuilder) super.noWait();
+        if (!forUpdate) {
+            throw new RuntimeException("noWait without forUpdate cannot be called");
+        }
+        noWait = true;
+        return this;
     }
 
-    @Override
     public SelectBuilder orderBy(String name) {
-        return (SelectBuilder) super.orderBy(name);
+        orderBys.add(name);
+        return this;
     }
 
-    @Override
+    /**
+     * Adds an ORDER BY item with a direction indicator.
+     *
+     * @param name
+     *            Name of the column by which to sort.
+     * @param ascending
+     *            If true, specifies the direction "asc", otherwise, specifies
+     *            the direction "desc".
+     */
     public SelectBuilder orderBy(String name, boolean ascending) {
-        return (SelectBuilder) super.orderBy(name, ascending);
+        if (ascending) {
+            orderBys.add(name + " asc");
+        } else {
+            orderBys.add(name + " desc");
+        }
+        return this;
     }
 
     @Override
-    public SelectBuilder union(ca.krasnay.sqlbuilder.SelectBuilder unionBuilder) {
-        return (SelectBuilder) super.union(unionBuilder);
+    public String toString() {
+
+        StringBuilder sql = new StringBuilder("select ");
+
+        if (distinct) {
+            sql.append("distinct ");
+        }
+
+        if (columns.size() == 0) {
+            sql.append("*");
+        } else {
+            SQLBuilder.appendList(sql, columns, "", ", ");
+        }
+
+        SQLBuilder.appendList(sql, tables, " from ", ", ");
+        SQLBuilder.appendList(sql, joins, " join ", " join ");
+        SQLBuilder.appendList(sql, leftJoins, " left join ", " left join ");
+        SQLBuilder.appendList(sql, wheres, " where ", " and ");
+        SQLBuilder.appendList(sql, groupBys, " group by ", ", ");
+        SQLBuilder.appendList(sql, havings, " having ", " and ");
+        SQLBuilder.appendList(sql, unions, " union ", " union ");
+        SQLBuilder.appendList(sql, orderBys, " order by ", ", ");
+
+        if (forUpdate) {
+            sql.append(" for update");
+            if (noWait) {
+                sql.append(" nowait");
+            }
+        }
+
+        if(limit > 0)
+            sql.append(" limit " + limit);
+        if(offset > 0)
+            sql.append(", " + offset);
+
+        return sql.toString();
     }
 
-    @Override
-    public SelectBuilder where(String expr) {
-        return (SelectBuilder) super.where(expr);
+    /**
+     * Adds a "union" select builder. The generated SQL will union this query
+     * with the result of the main query. The provided builder must have the
+     * same columns as the parent select builder and must not use "order by" or
+     * "for update".
+     */
+    public SelectBuilder union(SelectBuilder unionBuilder) {
+        unions.add(unionBuilder);
+        return this;
+    }
+
+    public SelectBuilder where(String expr, String op, String value) {
+        wheres.add(expr + " " + op + "?");
+        selectValues.add(value);
+        return this;
     }
 }

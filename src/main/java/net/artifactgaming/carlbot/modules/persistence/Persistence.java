@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Persistence implements Module {
@@ -79,9 +78,9 @@ public class Persistence implements Module {
         // You don't have to create the table for it to be a parent.
 
         // We're going to add this server to our list of known servers though, but only if it's not already there.
-        ResultSet resultSet = guilds.select().column("*").where("'DISCORD_ID'='" + guildID + "'").execute();
+        ResultSet resultSet = guilds.select().column("*").where("discord_id", "=", guildID).execute();
         if (!resultSet.next()) {
-            guilds.insert().set("\"DISCORD_ID\"", guildID).execute();
+            guilds.insert().set("discord_id", guildID).execute();
         }
 
         return table;
@@ -89,10 +88,6 @@ public class Persistence implements Module {
 
     public Table getGuildTable(Guild guild, PersistentModule module) throws SQLException {
         return getGuildTable(guild.getId(), module);
-    }
-
-    public static String cleanSQL(String input) {
-        return input.replaceAll("\\^[a-zA-Z_\\-]+$", "");
     }
 
     @Override

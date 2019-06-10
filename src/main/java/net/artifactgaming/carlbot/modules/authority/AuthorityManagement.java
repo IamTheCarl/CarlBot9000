@@ -111,7 +111,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
     private void listAuthorities(String discordId, List<Authority> giveAuthority, List<Authority> denyAuthority, Table table)
             throws SQLException {
         // Start by getting the immediate authority of the object.
-        ResultSet resultSet = table.select().column("*").where("discord_id='" + discordId + "'").execute();
+        ResultSet resultSet = table.select().column("*").where("discord_id", "=", discordId).execute();
         ResultSetMetaData rsmd = resultSet.getMetaData();
 
         while (resultSet.next()) {
@@ -197,12 +197,14 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                     }
 
                     // Check if our row exists. If not, make it exist.
-                    ResultSet resultSet = table.select().column("*").where("discord_id=" + discordId).execute();
+                    ResultSet resultSet = table.select().column("*").where("discord_id", "=", discordId)
+                            .execute();
                     if (!resultSet.next()) {
                         table.insert().set("discord_id", discordId).execute();
                     }
 
-                    table.update().set("\"" + authorityName + "\"=" + value).where("discord_id=" + discordId).execute();
+                    table.update().set("\"" + authorityName + "\"", value)
+                            .where("discord_id", "=", discordId).execute();
                     event.getChannel().sendMessage("Authority status set.").queue();
 
                 } else {
@@ -283,7 +285,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         String authorityName = authority.getClass().getCanonicalName();
 
         Table table = getAuthorityTable(guild);
-        ResultSet resultSet = table.select().column("*").where("discord_id='" + id +"'").execute();
+        ResultSet resultSet = table.select().column("*").where("discord_id", "=", id).execute();
 
         while (resultSet.next()) {
             boolean permission = resultSet.getBoolean(authorityName);
