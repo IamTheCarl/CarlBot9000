@@ -29,6 +29,11 @@ public class SelectBuilder implements SQLBuilder, Cloneable, Serializable {
         table.logger.debug("Run sql: " + this.toString());
 
         int i = 1;
+        for (String column : columns) {
+            statement.setString(i, column);
+            i++;
+        }
+
         for (String value : selectValues) {
             statement.setString(i, value);
             i++;
@@ -216,7 +221,12 @@ public class SelectBuilder implements SQLBuilder, Cloneable, Serializable {
         if (columns.size() == 0) {
             sql.append("*");
         } else {
-            SQLBuilder.appendList(sql, columns, "", ", ");
+            for (int i = 0; i < columns.size(); i++) {
+                if (i != 0) {
+                    sql.append(", ");
+                }
+                sql.append("?");
+            }
         }
 
         SQLBuilder.appendList(sql, tables, " from ", ", ");
