@@ -2,6 +2,8 @@ plugins {
     id 'java'
 }
 
+version='2019-6-11'
+
 group 'net.artifactgaming.carlbot'
 version '1.0-SNAPSHOT'
 
@@ -20,4 +22,16 @@ dependencies {
     compile "org.slf4j:slf4j-simple:1.7.26"
 
     compile group: 'com.h2database', name: 'h2', version: '1.4.199'
+}
+
+//create a single Jar with all dependencies
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Carl Bot 9000',
+                'Implementation-Version': version,
+                'Main-Class': 'net.artifactgaming.carlbot.CarlBot'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }
