@@ -16,6 +16,7 @@ import java.util.*;
 
 public class AuthorityManagement implements AuthorityRequiring, Module, PersistentModule {
 
+    private CarlBot carlbot;
     private Logger logger = LoggerFactory.getLogger(AuthorityManagement.class);
 
     private HashMap<String, Authority> authorities = new HashMap<>();
@@ -29,7 +30,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         return new Authority[] { new AuthorityToManipulate() };
     }
 
-    class ListAuthorityCommand implements Command {
+    private class ListAuthorityCommand implements Command {
 
         @Override
         public String getCallsign() {
@@ -108,8 +109,8 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         }
     }
 
-    private void listAuthorities(String discordId, List<Authority> giveAuthority, List<Authority> denyAuthority, Table table)
-            throws SQLException {
+    private void listAuthorities(String discordId, List<Authority> giveAuthority, List<Authority> denyAuthority,
+                                 Table table) throws SQLException {
         // Start by getting the immediate authority of the object.
         ResultSet resultSet = table.select().column("*").where("discord_id", "=", discordId).execute();
         ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -232,12 +233,27 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             if (tokens.size() == 1) {
                 Authority authority = getAuthorityByName(tokens.get(0));
-                boolean has = checkHasAuthority(event.getMember(), authority, true);
+                boolean has = checkHasAuthority(event.getMember(), authority);
 
                 if (has) {
                     event.getChannel().sendMessage("You have this authority.").queue();
                 } else {
                     event.getChannel().sendMessage("You do not have this authority.").queue();
+                }
+            } else if (tokens.size() == 2) {
+                Authority authority = getAuthorityByName(tokens.get(0));
+                Member member = Utils.getMemberFromMessage(event, tokens.get(1));
+
+                if (member != null) {
+                    boolean has = checkHasAuthority(member, authority);
+
+                    if (has) {
+                        event.getChannel().sendMessage("user has this authority.").queue();
+                    } else {
+                        event.getChannel().sendMessage("User does not have this authority.").queue();
+                    }
+                } else {
+                    event.getChannel().sendMessage("Could not find user to test.").queue();
                 }
             } else {
                 event.getChannel().sendMessage("Wrong number of arguments.").queue();
@@ -287,18 +303,30 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         Table table = getAuthorityTable(guild);
         ResultSet resultSet = table.select().column("*").where("discord_id", "=", id).execute();
 
-        while (resultSet.next()) {
-            Boolean permission = resultSet.getBoolean(authorityName);
-            if (resultSet.wasNull()) {
-                permission = null;
+        // We need to check if the column exists.
+        boolean exists = false;
+        ResultSetMetaData rsmd = resultSet.getMetaData();
+        for (int i = 1; i < rsmd.getColumnCount(); i++) {
+            if (rsmd.getColumnName(i).equals(authorityName)) {
+                exists = true;
+                break;
             }
+        }
 
-            if (permission != null) {
-                if (permission) {
-                    hasAuthority = true;
-                    break;
-                } else {
-                    return AuthorityState.Deny;
+        if (exists) {
+            while (resultSet.next()) {
+                Boolean permission = resultSet.getBoolean(authorityName);
+                if (resultSet.wasNull()) {
+                    permission = null;
+                }
+
+                if (permission != null) {
+                    if (permission) {
+                        hasAuthority = true;
+                        break;
+                    } else {
+                        return AuthorityState.Deny;
+                    }
                 }
             }
         }
@@ -330,7 +358,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
      */
     public boolean checkHasAuthority(Member member, Authority authority, boolean ignoreOwner) throws SQLException {
         // Do we even need to check?
-        if (!ignoreOwner && member.isOwner()) {
+        if (!ignoreOwner && (member.isOwner() || carlbot.checkIsOwner(member.getUser()))) {
             return true;
         } else {
 
@@ -402,6 +430,8 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
 
     @Override
     public void setup(CarlBot carlbot) {
+
+        this.carlbot = carlbot;
 
         // Get the persistence module.
         persistence = (Persistence) carlbot.getModule(Persistence.class);
