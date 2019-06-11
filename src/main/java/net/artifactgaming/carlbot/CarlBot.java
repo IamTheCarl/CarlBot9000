@@ -7,14 +7,19 @@ import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
+import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.sf.json.JSONObject;
+import net.sf.json.JSONSerializer;
+import net.sf.json.JSONArray;
+
 import javax.security.auth.login.LoginException;
+import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -35,12 +40,13 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
     private Logger logger = LoggerFactory.getLogger(CarlBot.class);
 
-    private final String callsign = "$>";
+    private String callsign = "$>";
+    private List<String> ownerIDs = new ArrayList<>();
 
     public static void main(String[] args) throws Exception {
 
         CarlBot bot = new CarlBot();
-        bot.getTokenFromFile("./botToken.txt");
+        bot.loadConfig(new File("./main_config.json"));
 
         bot.addModule(new Echo());
         bot.addModule(new Quotes());
@@ -50,8 +56,18 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.run();
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void loadConfig(File file) throws IOException {
+        String rawJson = readFile(file.getPath());
+        JSONObject json = (JSONObject) JSONSerializer.toJSON(rawJson);
+
+        token = json.getString("token");
+
+        JSONArray owners = json.getJSONArray("owners");
+
+        // There's no map feature, so we gotta unroll this ourselves.
+        for (int i = 0; i < owners.size(); i++) {
+            ownerIDs.add(owners.getString(i));
+        }
     }
 
     public void addModule(Module module) {
@@ -70,6 +86,10 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         }
     }
 
+    public boolean checkIsOwner(User user) {
+        return ownerIDs.contains(user.getId());
+    }
+
     public final List<Module> getModules() {
         return modules;
     }
@@ -78,18 +98,15 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         return moduleLookup.get(moduleClass);
     }
 
-    private static String readFile(String path, Charset encoding)
+    private static String readFile(String path)
             throws IOException
     {
         byte[] encoded = Files.readAllBytes(Paths.get(path));
+        return new String(encoded, StandardCharsets.UTF_8);
 
         // We have to remove the newline at the end of the file.
-        String string = new String(encoded, encoding);
-        return string.substring(0, string.length() - 1);
-    }
-
-    public void getTokenFromFile(String path) throws IOException {
-        token = readFile(path, StandardCharsets.UTF_8);
+        //String string = new String(encoded, encoding);
+        //return string.substring(0, string.length() - 1);
     }
 
     public void addCommandPermissionChecker(CommandPermissionChecker checker) {

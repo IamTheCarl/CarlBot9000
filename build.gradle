@@ -22,6 +22,9 @@ dependencies {
     compile "org.slf4j:slf4j-simple:1.7.26"
 
     compile group: 'com.h2database', name: 'h2', version: '1.4.199'
+
+    //compile group: 'net.sf.json-lib', name: 'json-lib', version: '2.4'
+    compile "net.sf.json-lib:json-lib:2.4:jdk15"
 }
 
 //create a single Jar with all dependencies
