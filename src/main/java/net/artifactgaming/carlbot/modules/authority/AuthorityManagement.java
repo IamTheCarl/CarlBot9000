@@ -123,12 +123,12 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                     continue;
                 }
 
-                boolean setting = resultSet.getBoolean(column);
-
                 // The setting was actually null, so we're going to ignore it.
                 if (resultSet.wasNull()) {
                     continue;
                 }
+
+                boolean setting = resultSet.getBoolean(column);
 
                 Authority authority = getAuthorityByName(column);
 
@@ -288,15 +288,16 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         ResultSet resultSet = table.select().column("*").where("discord_id", "=", id).execute();
 
         while (resultSet.next()) {
-            boolean permission = resultSet.getBoolean(authorityName);
-            if (permission) {
-                hasAuthority = true;
-                break;
-            }
 
             // We were denied.
             if (!resultSet.wasNull()) {
                 return AuthorityState.Deny;
+            }
+
+            boolean permission = resultSet.getBoolean(authorityName);
+            if (permission) {
+                hasAuthority = true;
+                break;
             }
         }
 
