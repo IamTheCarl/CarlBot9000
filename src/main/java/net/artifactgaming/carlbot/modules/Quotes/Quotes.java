@@ -143,7 +143,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
 
             Table table = getQuoteTable(event.getGuild());
-            ResultSet resultSet = table.select().column("quote").orderBy("RANDOM() LIMIT 1").execute();
+            ResultSet resultSet = table.select().column("quote").orderBy("RANDOM()").limit(1).execute();
 
             if (resultSet.next()) {
                 event.getChannel().sendMessage("\"" + resultSet.getString("quote") + "\"").queue();
