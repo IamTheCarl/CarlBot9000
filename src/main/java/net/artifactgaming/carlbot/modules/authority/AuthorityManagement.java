@@ -123,25 +123,25 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                     continue;
                 }
 
-                // The setting was actually null, so we're going to ignore it.
+                Boolean setting = resultSet.getBoolean(column);
                 if (resultSet.wasNull()) {
-                    continue;
+                    setting = null;
                 }
 
-                boolean setting = resultSet.getBoolean(column);
+                if (setting != null) {
+                    Authority authority = getAuthorityByName(column);
 
-                Authority authority = getAuthorityByName(column);
-
-                // Add authority to one of the lists.
-                if (setting) {
-                    // Don't add duplicates.
-                    if (!giveAuthority.contains(authority) && !denyAuthority.contains(authority)) {
-                        giveAuthority.add(authority);
-                    }
-                } else {
-                    // Don't add duplicates.
-                    if (!giveAuthority.contains(authority) && !denyAuthority.contains(authority)) {
-                        denyAuthority.add(authority);
+                    // Add authority to one of the lists.
+                    if (setting) {
+                        // Don't add duplicates.
+                        if (!giveAuthority.contains(authority) && !denyAuthority.contains(authority)) {
+                            giveAuthority.add(authority);
+                        }
+                    } else {
+                        // Don't add duplicates.
+                        if (!giveAuthority.contains(authority) && !denyAuthority.contains(authority)) {
+                            denyAuthority.add(authority);
+                        }
                     }
                 }
             }
@@ -173,13 +173,13 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                     switch (tokens.get(2)) {
                         // No problem, these are all valid authority modes.
                         case "give":
-                            value = "true";
+                            value = "1";
                             break;
                         case "deny":
-                            value = "false";
+                            value = "0";
                             break;
                         case "ignore":
-                            value = "null";
+                            value = null;
                             break;
                         default:
                             // Problem, what is this thing?
@@ -288,16 +288,18 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         ResultSet resultSet = table.select().column("*").where("discord_id", "=", id).execute();
 
         while (resultSet.next()) {
-
-            // We were denied.
-            if (!resultSet.wasNull()) {
-                return AuthorityState.Deny;
+            Boolean permission = resultSet.getBoolean(authorityName);
+            if (resultSet.wasNull()) {
+                permission = null;
             }
 
-            boolean permission = resultSet.getBoolean(authorityName);
-            if (permission) {
-                hasAuthority = true;
-                break;
+            if (permission != null) {
+                if (permission) {
+                    hasAuthority = true;
+                    break;
+                } else {
+                    return AuthorityState.Deny;
+                }
             }
         }
 
