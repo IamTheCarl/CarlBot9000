@@ -1,4 +1,4 @@
-package net.artifactgaming.carlbot.modules.Quotes;
+package net.artifactgaming.carlbot.modules.quotes;
 
 import net.artifactgaming.carlbot.modules.authority.Authority;
 
