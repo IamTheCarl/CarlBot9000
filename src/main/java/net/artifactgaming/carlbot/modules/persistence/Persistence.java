@@ -78,7 +78,7 @@ public class Persistence implements Module {
         // You don't have to create the table for it to be a parent.
 
         // We're going to add this server to our list of known servers though, but only if it's not already there.
-        ResultSet resultSet = guilds.select().column("*").where("discord_id", "=", guildID).execute();
+        ResultSet resultSet = guilds.select().where("discord_id", "=", guildID).execute();
         if (!resultSet.next()) {
             guilds.insert().set("discord_id", guildID).execute();
         }

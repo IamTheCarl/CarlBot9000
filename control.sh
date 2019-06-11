@@ -14,7 +14,7 @@ SESSION="discord-bot-`basename $PWD`"
 
 #COMMAND="bash"
 #COMMAND="--audit"
-COMMAND="python3 carlbot.py"
+COMMAND="java -jar carlbot9000.jar"
 SANDBOX="firejail --profile=/home/shared/sandbox-profiles/discord-bot.profile --whitelist=$PWD $COMMAND"
 
 start() {

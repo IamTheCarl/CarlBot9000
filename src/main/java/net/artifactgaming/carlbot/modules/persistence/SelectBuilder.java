@@ -245,10 +245,15 @@ public class SelectBuilder implements SQLBuilder, Cloneable, Serializable {
             }
         }
 
-        if(limit > 0)
-            sql.append(" limit " + limit);
-        if(offset > 0)
-            sql.append(", " + offset);
+        if(limit > 0) {
+            sql.append(" limit ");
+            sql.append(limit);
+        }
+
+        if(offset > 0) {
+            sql.append(", ");
+            sql.append(offset);
+        }
 
         return sql.toString();
     }
@@ -265,7 +270,7 @@ public class SelectBuilder implements SQLBuilder, Cloneable, Serializable {
     }
 
     public SelectBuilder where(String expr, String op, String value) {
-        wheres.add(expr + " " + op + "?");
+        wheres.add(expr + op + "?");
         selectValues.add(value);
         return this;
     }

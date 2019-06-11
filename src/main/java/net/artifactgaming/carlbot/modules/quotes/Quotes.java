@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                 Table table = getQuoteTable(event.getGuild());
 
                 // First we check if the quote already exists.
-                ResultSet resultSet = table.select().column("*").where("key", "=",tokens.get(0)).execute();
+                ResultSet resultSet = table.select().where("key", "=",tokens.get(0)).execute();
 
                 if (resultSet.next()) {
                     event.getChannel().sendMessage("A quote already exists for this key. "
@@ -83,7 +84,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                 Table table = getQuoteTable(event.getGuild());
 
                 // First we check if the quote already exists.
-                ResultSet resultSet = table.select().column("*").where("key", "=", tokens.get(0)).execute();
+                ResultSet resultSet = table.select().where("key", "=", tokens.get(0)).execute();
 
                 if (resultSet.next()) {
                     if (event.getAuthor().getId().equals(resultSet.getString("owner"))
@@ -170,7 +171,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             if (tokens.size() == 1) {
                 Table table = getQuoteTable(event.getGuild());
-                ResultSet resultSet = table.select().column("*").where("key", "=",tokens.get(0))
+                ResultSet resultSet = table.select().where("key", "=",tokens.get(0))
                         .execute();
 
                 if (resultSet.next()) {
@@ -215,7 +216,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                 Table table = getQuoteTable(event.getGuild());
 
                 // First we check if the quote already exists.
-                ResultSet resultSet = table.select().column("*").where("key", "=",tokens.get(0))
+                ResultSet resultSet = table.select().where("key", "=",tokens.get(0))
                         .execute();
 
                 if (resultSet.next()) {
@@ -265,7 +266,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                 Table table = getQuoteTable(event.getGuild());
 
                 // First we check if the quote already exists.
-                ResultSet resultSet = table.select().column("*").where("key", "=",tokens.get(0))
+                ResultSet resultSet = table.select().where("key", "=",tokens.get(0))
                         .execute();
 
                 if (resultSet.next()) {
@@ -321,12 +322,21 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
             Table table = getQuoteTable(event.getGuild());
 
             if (!tokens.isEmpty()) {
-                ResultSet resultSet = table.select().column("quote").where("key", "=", tokens.get(0))
+                ResultSet resultSet = table.select().where("key", "=", tokens.get(0))
                         .execute();
 
                 if (resultSet.next()) {
-                    event.getChannel().sendMessage("\""
-                            + Utils.cleanMessage(event.getAuthor(), resultSet.getString("quote")) + "\"").queue();
+
+                    ResultSetMetaData md = resultSet.getMetaData();
+
+                    for (int i = 1; i <= md.getColumnCount(); i++) {
+                        System.out.println(md.getColumnName(i));
+                    }
+
+                    String quote = resultSet.getString("quote");
+
+                    event.getChannel().sendMessage("[" + Utils.cleanMessage(event.getAuthor(), quote) + "]")
+                            .queue();
                 } else {
                     event.getChannel().sendMessage("Could not find a quote by that key.").queue();
                 }

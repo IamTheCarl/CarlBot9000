@@ -53,8 +53,8 @@ public class Table {
 
     public boolean exists() throws SQLException {
 
-        ResultSet results = database.tableOfTables.select()
-                .column("*").where("table_name", "=", getNameSQLForm()).execute();
+        ResultSet results = database.tableOfTables.select().where("table_name", "=", getNameSQLForm())
+                .execute();
 
         boolean exists = results.next();
         results.close();
@@ -64,7 +64,7 @@ public class Table {
 
     public boolean columnExists(String columnName) throws SQLException {
 
-        ResultSet results = database.tableOfColumns.select().column("*")
+        ResultSet results = database.tableOfColumns.select()
                 .where("TABLE_NAME", "=",getNameSQLForm())
                 .where("COLUMN_NAME", "=",columnName).execute();
 
