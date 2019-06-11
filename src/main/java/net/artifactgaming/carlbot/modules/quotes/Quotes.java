@@ -326,13 +326,6 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                         .execute();
 
                 if (resultSet.next()) {
-
-                    ResultSetMetaData md = resultSet.getMetaData();
-
-                    for (int i = 1; i <= md.getColumnCount(); i++) {
-                        System.out.println(md.getColumnName(i));
-                    }
-
                     String quote = resultSet.getString("quote");
 
                     event.getChannel().sendMessage("[" + Utils.cleanMessage(event.getAuthor(), quote) + "]")
