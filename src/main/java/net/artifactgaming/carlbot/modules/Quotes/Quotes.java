@@ -8,6 +8,7 @@ import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
@@ -272,13 +273,19 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                     if (event.getAuthor().getId().equals(resultSet.getString("owner"))
                             || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
 
-                        table.update()
-                                .set("owner", tokens.get(1))
-                                .where("key", "=", tokens.get(0))
-                                .execute();
+                        Member newOwner = Utils.getMemberFromMessage(event, tokens.get(1));
 
-                        event.getChannel().sendMessage("Quote owner updated.").queue();
+                        if (newOwner != null) {
+                            table.update()
+                                    .set("owner", newOwner.getUser().getId())
+                                    .where("key", "=", tokens.get(0))
+                                    .execute();
 
+                            event.getChannel().sendMessage("Quote owner updated.").queue();
+                        } else {
+                            event.getChannel().sendMessage(
+                                    "Could not find the member you were trying to give the quote to.").queue();
+                        }
                     } else {
                         event.getChannel().sendMessage(
                                 "You must own this quote or be the quote admin to edit it.").queue();
@@ -318,7 +325,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
                         .execute();
 
                 if (resultSet.next()) {
-                    event.getChannel().sendMessage("\"" + resultSet.getString("quote") + "\"").queue();
+                    event.getChannel().sendMessage("\""
+                            + Utils.cleanMessage(event.getAuthor(), resultSet.getString("quote")) + "\"").queue();
                 } else {
                     event.getChannel().sendMessage("Could not find a quote by that key.").queue();
                 }
