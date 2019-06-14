@@ -107,6 +107,11 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                 }
             }
         }
+
+        @Override
+        public Module getParentModule() {
+            return AuthorityManagement.this;
+        }
     }
 
     private void listAuthorities(String discordId, List<Authority> giveAuthority, List<Authority> denyAuthority,
@@ -220,6 +225,11 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new AuthorityToManipulate() };
         }
+
+        @Override
+        public Module getParentModule() {
+            return AuthorityManagement.this;
+        }
     }
 
     class TestCommand implements Command {
@@ -259,6 +269,11 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                 event.getChannel().sendMessage("Wrong number of arguments.").queue();
             }
         }
+
+        @Override
+        public Module getParentModule() {
+            return AuthorityManagement.this;
+        }
     };
 
     class AuthorityCommand implements AuthorityRequiring, Command {
@@ -287,6 +302,11 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             commands.runCommand(event, rawString, tokens);
+        }
+
+        @Override
+        public Module getParentModule() {
+            return AuthorityManagement.this;
         }
     }
 
@@ -468,7 +488,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                         // Don't have it? Fail.
                         if (!checkHasAuthority(event.getMember(), authority)) {
 
-                            String message = "You lack the autority needed to use this command.\n"
+                            String message = "You lack the authority needed to use this command.\n"
                                     + "Authority required:\n```\n";
 
                             for (Authority authorityToList : ((AuthorityRequiring) command).getRequiredAuthority()) {
