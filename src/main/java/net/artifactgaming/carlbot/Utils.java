@@ -10,6 +10,8 @@ import java.util.List;
 
 public class Utils {
 
+    public final static String STRING_EMPTY = "";
+
     /**
      * Removes @everyone and @here pings from messages.
      * @param sender User who sent the message.
@@ -58,6 +60,15 @@ public class Utils {
         }
 
         return member;
+    }
+
+    public static ObjectResult<Integer> tryParseInteger(String value){
+        try {
+            int result = Integer.parseInt(value);
+            return new ObjectResult<>(result);
+        } catch (NumberFormatException e) {
+            return new ObjectResult<>(null);
+        }
     }
 
     /**
