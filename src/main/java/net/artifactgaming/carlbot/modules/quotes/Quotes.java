@@ -69,6 +69,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new UseQuotes() };
         }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
     }
 
     private class RemoveCommand implements Command, AuthorityRequiring {
@@ -114,6 +119,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new UseQuotes() };
         }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
     }
 
     private class DeleteAllCommand implements Command, AuthorityRequiring {
@@ -131,6 +141,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         @Override
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
         }
     }
 
@@ -157,6 +172,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         @Override
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
         }
     }
 
@@ -200,6 +220,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         @Override
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
         }
     }
 
@@ -250,6 +275,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         @Override
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
         }
     }
 
@@ -308,6 +338,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new UseQuotes() };
         }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
     }
 
     private class GetCommand implements Command, AuthorityRequiring {
@@ -342,6 +377,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new UseQuotes() };
         }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
     }
 
     private class QuoteCommand implements Command, AuthorityRequiring {
@@ -375,6 +415,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         @Override
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
         }
     }
 

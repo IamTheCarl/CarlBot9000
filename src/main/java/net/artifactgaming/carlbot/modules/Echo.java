@@ -36,6 +36,11 @@ public class Echo implements Module {
 
             event.getChannel().sendMessage(message).queue();
         }
+
+        @Override
+        public Module getParentModule() {
+            return Echo.this;
+        }
     }
 
     @Override

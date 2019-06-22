@@ -5,6 +5,7 @@ import net.artifactgaming.carlbot.listeners.MessageReader;
 import net.artifactgaming.carlbot.modules.quotes.Quotes;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
+import net.artifactgaming.carlbot.modules.selfdocumentation.SelfDocumentation;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.entities.User;
@@ -24,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -57,6 +59,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.addModule(new Quotes());
         bot.addModule(new AuthorityManagement());
         bot.addModule(new Persistence());
+        bot.addModule(new SelfDocumentation());
 
         bot.run();
     }
@@ -162,5 +165,9 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
     public void crash() {
         System.exit(-1);
+    }
+
+    public Collection<Command> getCommands() {
+        return commands.getCommands();
     }
 }
