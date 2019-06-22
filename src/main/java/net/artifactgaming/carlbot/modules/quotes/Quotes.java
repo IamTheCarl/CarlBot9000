@@ -7,6 +7,7 @@ import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
+import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.User;
@@ -19,7 +20,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
 
-public class Quotes implements Module, AuthorityRequiring, PersistentModule {
+public class Quotes implements Module, AuthorityRequiring, PersistentModule, Documented {
 
     private AuthorityManagement authorityManagement;
     private Persistence persistence;
@@ -31,7 +32,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         return new Authority[] { new QuoteAdmin(), new UseQuotes() };
     }
 
-    private class AddCommand implements Command, AuthorityRequiring {
+    private class AddCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -74,9 +75,19 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Module getParentModule() {
             return Quotes.this;
         }
+
+        @Override
+        public String getDocumentation() {
+            return "Adds a quote.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "add";
+        }
     }
 
-    private class RemoveCommand implements Command, AuthorityRequiring {
+    private class RemoveCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -124,6 +135,16 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Module getParentModule() {
             return Quotes.this;
         }
+
+        @Override
+        public String getDocumentation() {
+            return "Removes a quote.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "remove";
+        }
     }
 
     private class DeleteAllCommand implements Command, AuthorityRequiring {
@@ -135,6 +156,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
+            // TODO: Quote deletion command (Implement Documented afterwards)
             event.getChannel().sendMessage("Remove all command issued, but its not yet supported.").queue();
         }
 
@@ -149,7 +171,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         }
     }
 
-    private class RandomCommand implements Command, AuthorityRequiring {
+    private class RandomCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -178,9 +200,19 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Module getParentModule() {
             return Quotes.this;
         }
+
+        @Override
+        public String getDocumentation() {
+            return "Fetches a random quote from the sea of quotes.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "random";
+        }
     }
 
-    private class InfoCommand implements Command, AuthorityRequiring {
+    private class InfoCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -226,9 +258,19 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Module getParentModule() {
             return Quotes.this;
         }
+
+        @Override
+        public String getDocumentation() {
+            return "Fetches the quote and the owner of it.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "info";
+        }
     }
 
-    private class EditCommand implements Command, AuthorityRequiring {
+    private class EditCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -281,9 +323,19 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Module getParentModule() {
             return Quotes.this;
         }
+
+        @Override
+        public String getDocumentation() {
+            return "Edit a quote that currently exists.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "edit";
+        }
     }
 
-    private class GiveAwayCommand implements Command, AuthorityRequiring {
+    private class GiveAwayCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -343,9 +395,19 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         public Module getParentModule() {
             return Quotes.this;
         }
+
+        @Override
+        public String getDocumentation() {
+            return "Set the owner of this quote to another person.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "give away";
+        }
     }
 
-    private class GetCommand implements Command, AuthorityRequiring {
+    private class GetCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -381,6 +443,16 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
         @Override
         public Module getParentModule() {
             return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Fetches a quote.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "get";
         }
     }
 
@@ -462,4 +534,18 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule {
     public Command[] getCommands(CarlBot carlbot) {
         return new Command[] { new QuoteCommand(carlbot) };
     }
+
+    //region DOCUMENTATION
+
+    @Override
+    public String getDocumentation() {
+        return "This module allows you to add, remove and access quotes";
+    }
+
+    @Override
+    public String getDocumentationCallsign() {
+        return "quote";
+    }
+
+    //endregion
 }

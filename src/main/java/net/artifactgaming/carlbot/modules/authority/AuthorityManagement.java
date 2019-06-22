@@ -2,6 +2,7 @@ package net.artifactgaming.carlbot.modules.authority;
 
 import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.modules.persistence.*;
+import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Role;
@@ -14,7 +15,13 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 
-public class AuthorityManagement implements AuthorityRequiring, Module, PersistentModule {
+public class AuthorityManagement implements AuthorityRequiring, Module, PersistentModule, Documented {
+
+    private enum AuthorityState {
+        Give,
+        Deny,
+        Ignore
+    }
 
     private CarlBot carlbot;
     private Logger logger = LoggerFactory.getLogger(AuthorityManagement.class);
@@ -30,7 +37,8 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         return new Authority[] { new AuthorityToManipulate() };
     }
 
-    private class ListAuthorityCommand implements Command {
+
+    private class ListAuthorityCommand implements Command, Documented {
 
         @Override
         public String getCallsign() {
@@ -112,6 +120,16 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         public Module getParentModule() {
             return AuthorityManagement.this;
         }
+
+        @Override
+        public String getDocumentation() {
+            return "List the authorities in a server, or a user.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "list";
+        }
     }
 
     private void listAuthorities(String discordId, List<Authority> giveAuthority, List<Authority> denyAuthority,
@@ -154,7 +172,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         }
     }
 
-    class SetAuthorityCommand implements Command, AuthorityRequiring {
+    class SetAuthorityCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -229,6 +247,16 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         @Override
         public Module getParentModule() {
             return AuthorityManagement.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Set an authority of a user in this server.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "set";
         }
     }
 
@@ -308,12 +336,6 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         public Module getParentModule() {
             return AuthorityManagement.this;
         }
-    }
-
-    private enum AuthorityState {
-        Give,
-        Deny,
-        Ignore
     }
 
     private AuthorityState checkAuthorityRaw(String id, Guild guild, Authority authority) throws SQLException {
@@ -519,5 +541,15 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
     @Override
     public Command[] getCommands(CarlBot carlbot) {
         return new Command[] {new AuthorityCommand(carlbot)};
+    }
+
+    @Override
+    public String getDocumentation() {
+        return "This module does things that are related to server authority.";
+    }
+
+    @Override
+    public String getDocumentationCallsign() {
+        return "authority";
     }
 }

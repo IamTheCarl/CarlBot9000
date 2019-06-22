@@ -4,11 +4,12 @@ import net.artifactgaming.carlbot.CarlBot;
 import net.artifactgaming.carlbot.Command;
 import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.Utils;
+import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import java.util.List;
 
-public class Echo implements Module {
+public class Echo implements Module, Documented {
 
     private class EchoCommand implements Command {
 
@@ -41,6 +42,7 @@ public class Echo implements Module {
         public Module getParentModule() {
             return Echo.this;
         }
+
     }
 
     @Override
@@ -52,4 +54,18 @@ public class Echo implements Module {
     public Command[] getCommands(CarlBot carlbot) {
         return new Command[] {new EchoCommand()};
     }
+
+    //region DOCUMENTATION
+
+    @Override
+    public String getDocumentation() {
+        return "This module allows the bot to repeat what you said!\n (It does not ping everyone though.)";
+    }
+
+    @Override
+    public String getDocumentationCallsign() {
+        return "echo";
+    }
+
+    //endregion
 }
