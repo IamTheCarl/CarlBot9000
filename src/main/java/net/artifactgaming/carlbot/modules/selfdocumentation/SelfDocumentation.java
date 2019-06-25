@@ -2,6 +2,7 @@ package net.artifactgaming.carlbot.modules.selfdocumentation;
 
 import net.artifactgaming.carlbot.CarlBot;
 import net.artifactgaming.carlbot.Command;
+import net.artifactgaming.carlbot.CommandSet;
 import net.artifactgaming.carlbot.Module;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
@@ -66,7 +67,22 @@ public class SelfDocumentation implements Module, Documented {
                         String commandList = "Documented commands provided by this module:\n```\n";
 
                         for (Command command : carlbot.getCommands()) {
-                            if (command.getParentModule() == moduleDocument && command instanceof Documented) {
+                            // Ensure that all shown documentated commands are from the requested command.
+                            if (command.getParentModule() != moduleDocument) { continue; }
+
+                            // For command sets (Like QuoteCommands)
+                            if (command instanceof CommandSet){
+                                CommandSet commandSet = (CommandSet) command;
+
+                                for (Command commandInCommandSet : commandSet.getCommands()){
+                                    if (commandInCommandSet instanceof Documented) {
+                                        numCommands++;
+                                        commandList += ((Documented) commandInCommandSet).getDocumentationCallsign();
+                                        commandList += '\n';
+                                    }
+                                }
+                            }
+                            else if (command instanceof Documented) {
                                 numCommands++;
                                 commandList += ((Documented) command).getDocumentationCallsign();
                                 commandList += '\n';
@@ -85,12 +101,34 @@ public class SelfDocumentation implements Module, Documented {
                         String documentation = "The module exists but the command could not be found in it.";
 
                         for (Command command : carlbot.getCommands()) {
-                            if (command.getParentModule() == moduleDocument && command instanceof Documented) {
+                            boolean respectiveCommandFound = false;
+                            if (command.getParentModule() != moduleDocument){ continue; }
+
+                            // If this command has a command set, loop through the commandset.
+                            if (command instanceof CommandSet){
+                                CommandSet commandSet = (CommandSet) command;
+
+                                for (Command commandInCommandSet : commandSet.getCommands()){
+                                    // Search if any of the commands in this commandset matches the desired command.
+                                    if (commandInCommandSet instanceof  Documented){
+                                        Documented documentedCommand = (Documented) commandInCommandSet;
+                                        if (documentedCommand.getDocumentationCallsign().equals(tokens.get(1))) {
+                                            documentation = documentedCommand.getDocumentation();
+                                            respectiveCommandFound = true;
+                                        }
+                                    }
+                                }
+
+                            } else if (command instanceof Documented) {
                                 Documented commandDocument = (Documented)command;
                                 if (commandDocument.getDocumentationCallsign().equals(tokens.get(1))) {
                                     documentation = ((Documented) command).getDocumentation();
-                                    break;
+                                    respectiveCommandFound = true;
                                 }
+                            }
+
+                            if (respectiveCommandFound){
+                                break;
                             }
                         }
 

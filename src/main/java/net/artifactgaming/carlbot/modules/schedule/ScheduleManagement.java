@@ -26,15 +26,12 @@ import java.util.function.Function;
 
 public class ScheduleManagement implements PersistentModule, Module {
 
-    // TODO: Possibly make a dynamic thread pool size for the scheduler executor, rather than a static size.
-    private final static int schedulerCorePoolSize = 1024;
-
     private Persistence persistence;
     private Logger logger = LoggerFactory.getLogger(Quotes.class);
 
     private List<ScheduleTimer> scheduleTimers;
 
-    private class ScheduleCommands implements Command {
+    private class ScheduleCommands implements Command, CommandSet {
         private CommandHandler commands;
 
         ScheduleCommands(CarlBot carlbot) {
@@ -58,6 +55,10 @@ public class ScheduleManagement implements PersistentModule, Module {
         @Override
         public Module getParentModule() {
             return ScheduleManagement.this;
+        }
+
+        public Collection<Command> getCommands() {
+            return commands.getCommands();
         }
 
     }

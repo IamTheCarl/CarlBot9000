@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 
 public class Quotes implements Module, AuthorityRequiring, PersistentModule, Documented {
@@ -456,7 +457,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         }
     }
 
-    private class QuoteCommand implements Command, AuthorityRequiring {
+    private class QuoteCommand implements Command, AuthorityRequiring, Documented, CommandSet {
 
         private CommandHandler commands;
 
@@ -492,6 +493,20 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         @Override
         public Module getParentModule() {
             return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "This module allows you to add, remove and access quotes";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "quote";
+        }
+
+        public Collection<Command> getCommands() {
+            return commands.getCommands();
         }
     }
 
@@ -531,13 +546,6 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
     }
 
     @Override
-    public Command[] getCommands(CarlBot carlbot) {
-        return new Command[] { new QuoteCommand(carlbot) };
-    }
-
-    //region DOCUMENTATION
-
-    @Override
     public String getDocumentation() {
         return "This module allows you to add, remove and access quotes";
     }
@@ -547,5 +555,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         return "quote";
     }
 
-    //endregion
+    @Override
+    public Command[] getCommands(CarlBot carlbot) {
+        return new Command[] { new QuoteCommand(carlbot) };
+    }
 }
