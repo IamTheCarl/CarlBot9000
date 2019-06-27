@@ -94,7 +94,7 @@ public class SelfDocumentation implements Module, Documented {
                         if (numCommands > 0) {
                             event.getChannel().sendMessage(commandList).queue();
                         } else {
-                            event.getChannel().sendMessage("This module does not provide any commands.").queue();
+                            event.getChannel().sendMessage("This module does not provide any sub-commands.").queue();
                         }
                     } else {
 
