@@ -5,8 +5,10 @@ import org.h2.jdbc.JdbcSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 public class CommandHandler {
 
@@ -74,5 +76,17 @@ public class CommandHandler {
         } else {
             event.getChannel().sendMessage(subName + ": No command name given.").queue();
         }
+    }
+
+    public Set<String> getCallsigns() {
+        return commands.keySet();
+    }
+
+    public Command getCommand(String callsign) {
+        return commands.get(callsign);
+    }
+
+    public Collection<Command> getCommands() {
+        return commands.values();
     }
 }

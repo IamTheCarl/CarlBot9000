@@ -71,6 +71,10 @@ public class Persistence implements Module {
         }
     }
 
+    public Table getUsersTable(){
+        return users;
+    }
+
     public Table getGuildTable(String guildID, PersistentModule module) throws SQLException {
         String moduleName = module.getClass().getCanonicalName();
 

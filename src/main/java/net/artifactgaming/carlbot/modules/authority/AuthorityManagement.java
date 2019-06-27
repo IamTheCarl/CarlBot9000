@@ -2,6 +2,7 @@ package net.artifactgaming.carlbot.modules.authority;
 
 import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.modules.persistence.*;
+import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Role;
@@ -14,7 +15,13 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 
-public class AuthorityManagement implements AuthorityRequiring, Module, PersistentModule {
+public class AuthorityManagement implements AuthorityRequiring, Module, PersistentModule, Documented {
+
+    private enum AuthorityState {
+        Give,
+        Deny,
+        Ignore
+    }
 
     private CarlBot carlbot;
     private Logger logger = LoggerFactory.getLogger(AuthorityManagement.class);
@@ -30,7 +37,8 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         return new Authority[] { new AuthorityToManipulate() };
     }
 
-    private class ListAuthorityCommand implements Command {
+
+    private class ListAuthorityCommand implements Command, Documented {
 
         @Override
         public String getCallsign() {
@@ -107,6 +115,21 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                 }
             }
         }
+
+        @Override
+        public Module getParentModule() {
+            return AuthorityManagement.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "List the authorities in a server, or a user.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "list";
+        }
     }
 
     private void listAuthorities(String discordId, List<Authority> giveAuthority, List<Authority> denyAuthority,
@@ -149,7 +172,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         }
     }
 
-    class SetAuthorityCommand implements Command, AuthorityRequiring {
+    class SetAuthorityCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -220,6 +243,21 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         public Authority[] getRequiredAuthority() {
             return new Authority[] { new AuthorityToManipulate() };
         }
+
+        @Override
+        public Module getParentModule() {
+            return AuthorityManagement.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Set an authority of a user in this server.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "set";
+        }
     }
 
     class TestCommand implements Command {
@@ -259,6 +297,11 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                 event.getChannel().sendMessage("Wrong number of arguments.").queue();
             }
         }
+
+        @Override
+        public Module getParentModule() {
+            return AuthorityManagement.this;
+        }
     };
 
     class AuthorityCommand implements AuthorityRequiring, Command {
@@ -288,12 +331,11 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             commands.runCommand(event, rawString, tokens);
         }
-    }
 
-    private enum AuthorityState {
-        Give,
-        Deny,
-        Ignore
+        @Override
+        public Module getParentModule() {
+            return AuthorityManagement.this;
+        }
     }
 
     private AuthorityState checkAuthorityRaw(String id, Guild guild, Authority authority) throws SQLException {
@@ -468,7 +510,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                         // Don't have it? Fail.
                         if (!checkHasAuthority(event.getMember(), authority)) {
 
-                            String message = "You lack the autority needed to use this command.\n"
+                            String message = "You lack the authority needed to use this command.\n"
                                     + "Authority required:\n```\n";
 
                             for (Authority authorityToList : ((AuthorityRequiring) command).getRequiredAuthority()) {
@@ -499,5 +541,15 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
     @Override
     public Command[] getCommands(CarlBot carlbot) {
         return new Command[] {new AuthorityCommand(carlbot)};
+    }
+
+    @Override
+    public String getDocumentation() {
+        return "This module does things that are related to server authority.";
+    }
+
+    @Override
+    public String getDocumentationCallsign() {
+        return "authority";
     }
 }
