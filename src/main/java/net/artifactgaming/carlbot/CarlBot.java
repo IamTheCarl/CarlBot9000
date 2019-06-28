@@ -61,6 +61,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.addModule(new Persistence());
         bot.addModule(new SelfDocumentation());
 
+
         bot.run();
     }
 

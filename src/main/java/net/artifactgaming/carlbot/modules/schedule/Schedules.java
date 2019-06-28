@@ -13,11 +13,10 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Array;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Schedules implements Module, AuthorityRequiring, PersistentModule {
 
@@ -28,6 +27,8 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
 
     private CarlBot carlBot;
     private Map<String, SchedulableCommand> schedulableModules = new HashMap<>();
+
+    private ArrayList<Schedule> schedules;
 
     @Override
     public void setup(CarlBot carlbot) {
@@ -50,6 +51,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
         }
 
         loadAllSchedulableCommandsIntoHashMap();
+        loadAllSchedulesFromDatabase();
     }
 
     private void loadAllSchedulableCommandsIntoHashMap(){
@@ -59,6 +61,11 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
                 schedulableModules.put(command.getCallsign(), command);
             }
         }
+    }
+
+    private void loadAllSchedulesFromDatabase(){
+        schedules = new ArrayList<Schedule>();
+        // TODO: Get all schedules in the database from all guides.
     }
 
     private Table getScheduleTable(Guild guild) throws SQLException {
@@ -81,6 +88,29 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
         return scheduleTable;
     }
 
+    private ArrayList<Schedule> getSchedulesFromTable(Guild guild) throws SQLException {
+        Table scheduleTable = getScheduleTable(guild);
+
+        ResultSet resultSet = scheduleTable.select().execute();
+
+        ArrayList<Schedule> fetchedSchedules = new ArrayList<>();
+
+        // Add all schedules from the guild into the array.
+        while (resultSet.next()){
+            String ownerID = resultSet.getString("owner_ID");
+            String guildID = resultSet.getString("guild_ID");
+            String channelID = resultSet.getString("channel_ID");
+            String commandRawString = resultSet.getString("command_rawString");
+            int interval = resultSet.getInt("interval");
+
+            Schedule temp = new Schedule(ownerID, guildID, channelID, commandRawString, interval, false);
+
+            fetchedSchedules.add(temp);
+        }
+
+        return fetchedSchedules;
+    }
+
     private void addScheduleToTable(Guild guild, Schedule schedule) throws SQLException {
         Table scheduleTable = getScheduleTable(guild);
 
@@ -91,6 +121,28 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
                 .set("command_rawString", schedule.getCommandRawString())
                 .set("interval", Integer.toString(schedule.getIntervalHours()))
                 .execute();
+    }
+
+    private class getScheduleCommand implements Command {
+
+        @Override
+        public String getCallsign() {
+            return "get";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            ArrayList<Schedule>  guildSchedules = getSchedulesFromTable(event.getGuild());
+
+            for (Schedule schedule :  guildSchedules){
+                // TODO: Print out all the schedules in the guild.
+            }
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Schedules.this;
+        }
     }
 
     private class addScheduleCommand implements  Command, AuthorityRequiring {
@@ -206,6 +258,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
 
             commands.setSubName(this.getCallsign());
             commands.addCommand(new addScheduleCommand());
+            commands.addCommand(new getScheduleCommand());
         }
 
         @Override
@@ -242,5 +295,13 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
     @Override
     public Authority[] getRequiredAuthority() {
         return new Authority[] { new UseSchedules() };
+    }
+
+    private class OnScheduleIntervalReached implements OnScheduleInterval {
+        @Override
+        public void onScheduleIntervalCallback(Schedule schedule){
+
+        }
+
     }
 }
