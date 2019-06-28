@@ -8,6 +8,7 @@ import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
 import net.artifactgaming.carlbot.modules.quotes.Quotes;
+import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-public class Schedules implements Module, AuthorityRequiring, PersistentModule {
+public class Schedules implements Module, AuthorityRequiring, PersistentModule, Documented {
 
     private AuthorityManagement authorityManagement;
     private Persistence persistence;
@@ -123,7 +124,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
                 .execute();
     }
 
-    private class getScheduleCommand implements Command {
+    private class getScheduleCommand implements Command, Documented {
 
         @Override
         public String getCallsign() {
@@ -143,9 +144,19 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
         public Module getParentModule() {
             return Schedules.this;
         }
+
+        @Override
+        public String getDocumentation() {
+            return "Fetches all the currently scheduled commands in this server.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "get";
+        }
     }
 
-    private class addScheduleCommand implements  Command, AuthorityRequiring {
+    private class addScheduleCommand implements  Command, AuthorityRequiring, Documented {
         @Override
         public String getCallsign() {
             return "add";
@@ -174,6 +185,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
 
                 if (scheduleObjectResult.getResult()){
                     Schedule newSchedule = scheduleObjectResult.getObject();
+                    newSchedule.setOnScheduleIntervalListener(new OnScheduleIntervalReached());
 
                     addScheduleToTable(event.getGuild(), newSchedule);
                 } else {
@@ -247,6 +259,16 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
         public Module getParentModule() {
             return Schedules.this;
         }
+
+        @Override
+        public String getDocumentation() {
+            return "Adds a new scheduled command to this server.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "add";
+        }
     }
 
     private class ScheduleCommands implements Command, AuthorityRequiring, CommandSet {
@@ -300,8 +322,18 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule {
     private class OnScheduleIntervalReached implements OnScheduleInterval {
         @Override
         public void onScheduleIntervalCallback(Schedule schedule){
-
+            // TODO: Invoke command when the interval timer is reached.
         }
 
+    }
+
+    @Override
+    public String getDocumentation() {
+        return "Module that is related to scheduling commands in a server.";
+    }
+
+    @Override
+    public String getDocumentationCallsign() {
+        return "schedule";
     }
 }
