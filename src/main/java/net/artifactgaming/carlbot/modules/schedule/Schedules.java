@@ -67,6 +67,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
     private void loadAllSchedulesFromDatabase(){
         schedules = new ArrayList<Schedule>();
         // TODO: Get all schedules in the database from all guides.
+
     }
 
     private Table getScheduleTable(Guild guild) throws SQLException {
@@ -77,6 +78,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             scheduleTable.create();
 
             scheduleTable.alter().add()
+                    .pushValue("key varchar")
                     .pushValue("owner_ID varchar")
                     .pushValue("owner_name varchar")
                     .pushValue("guild_ID varchar")
@@ -98,13 +100,15 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
         // Add all schedules from the guild into the array.
         while (resultSet.next()){
+            String key = resultSet.getString("key");
             String ownerID = resultSet.getString("owner_ID");
             String guildID = resultSet.getString("guild_ID");
             String channelID = resultSet.getString("channel_ID");
             String commandRawString = resultSet.getString("command_rawString");
             int interval = resultSet.getInt("interval");
 
-            Schedule temp = new Schedule(ownerID, guildID, channelID, commandRawString, interval, false);
+            Schedule temp = new Schedule(key, ownerID, guildID, channelID, commandRawString, interval, false);
+            temp.setOnScheduleIntervalListener(new OnScheduleIntervalReached());
 
             fetchedSchedules.add(temp);
         }
@@ -164,8 +168,8 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
-            if (tokens.size() < 2){
-                event.getChannel().sendMessage("Wrong number of arguments. Command should be:\n$>schedule add \"hour\" \"commandToInvoke\"").queue();
+            if (tokens.size() < 3){
+                event.getChannel().sendMessage("Wrong number of arguments. Command should be:\n$>schedule add \"key\" \"hour\" \"commandToInvoke\"").queue();
                 return;
             }
 
@@ -198,7 +202,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
         private ObjectResult<Schedule> tryGetScheduleFromRanCommand(MessageReceivedEvent event, String rawString, List<String> tokens){
             try {
-                Schedule newSchedule = new Schedule(event.getAuthor().getId(), event.getGuild().getId(), event.getChannel().getId(), rawString, Integer.parseInt(tokens.get(0)));
+                Schedule newSchedule = new Schedule(tokens.get(0), event.getAuthor().getId(), event.getGuild().getId(), event.getChannel().getId(), rawString, Integer.parseInt(tokens.get(1)));
                 return new ObjectResult<>(newSchedule);
             } catch (IndexOutOfBoundsException e) {
                 return new ObjectResult<>(null, "Wrong number of arguments. Command should be:\n$>schedule add \"hour\" \"commandToInvoke\"");

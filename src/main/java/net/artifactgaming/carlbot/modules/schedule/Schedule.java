@@ -4,6 +4,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class Schedule {
+    private String key;
     private String userID;
     private String guildID;
     private String channelID;
@@ -16,7 +17,8 @@ public class Schedule {
 
     private Timer scheduleTimer;
 
-    public Schedule(String userID, String guildID, String channelID, String commandRawString, int intervalHours) {
+    public Schedule(String key, String userID, String guildID, String channelID, String commandRawString, int intervalHours) {
+        this.key = key;
         this.userID = userID;
         this.guildID = guildID;
         this.channelID = channelID;
@@ -25,7 +27,8 @@ public class Schedule {
         setupScheduleTimer();
     }
 
-    public Schedule(String userID, String guildID, String channelID, String commandRawString, int intervalHours, boolean startTimer) {
+    public Schedule(String key, String userID, String guildID, String channelID, String commandRawString, int intervalHours, boolean startTimer) {
+        this.key = key;
         this.userID = userID;
         this.guildID = guildID;
         this.channelID = channelID;
@@ -63,6 +66,8 @@ public class Schedule {
         scheduleTimer.cancel();
         scheduleTimer.purge();
     }
+
+    public String getKey(){return key;}
 
     public String getUserID() {
         return userID;
