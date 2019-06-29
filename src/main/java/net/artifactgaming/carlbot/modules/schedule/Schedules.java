@@ -15,6 +15,7 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.rmi.CORBA.Util;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,7 +33,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
     private ArrayList<Schedule> schedules;
 
-    public Schedules(){
+    public Schedules() {
         CarlBot.addOnCarlbotReadyListener(new OnCarlBotReadyEvent());
     }
 
@@ -59,7 +60,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         loadAllSchedulableCommandsIntoHashMap();
     }
 
-    private void loadAllSchedulableCommandsIntoHashMap(){
+    private void loadAllSchedulableCommandsIntoHashMap() {
         for (Module module : carlBot.getModules()) {
             if (module instanceof SchedulableCommand) {
                 SchedulableCommand command = (SchedulableCommand) module;
@@ -98,7 +99,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         ArrayList<Schedule> fetchedSchedules = new ArrayList<>();
 
         // Add all schedules from the guild into the array.
-        while (resultSet.next()){
+        while (resultSet.next()) {
             String key = resultSet.getString("key");
             String ownerID = resultSet.getString("owner_ID");
             String guildID = resultSet.getString("guild_ID");
@@ -136,16 +137,68 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
-            ArrayList<Schedule>  guildSchedules = getSchedulesFromTable(event.getGuild());
+            ArrayList<Schedule> guildSchedules = getSchedulesFromTable(event.getGuild());
 
-            for (Schedule schedule :  guildSchedules){
-                // TODO: Print out all the schedules in the guild.
-                schedulesToReadableString(guildSchedules);
+            if (tokens.size() == 0) {
+                printAllSchedulesInGuild(event, guildSchedules);
+            } else if (tokens.size() == 1) {
+                printScheduleInGuildByKey(tokens.get(0), event, guildSchedules);
+            } else {
+                event.getChannel().sendMessage("Wrong number of argument, usage: \"$>schedule get <key>\"").queue();
             }
         }
 
-        private void schedulesToReadableString(List<Schedule> schedules){
-            
+        private void printScheduleInGuildByKey(String key, MessageReceivedEvent event, ArrayList<Schedule> guildSchedules){
+            ObjectResult<Schedule> scheduleObjectResult = findScheduleByKey(key, guildSchedules);
+
+            if (scheduleObjectResult.getResult()){
+                Schedule scheduleToPrint = scheduleObjectResult.getObject();
+
+                String channelName = event.getGuild().getTextChannelById(scheduleToPrint.getChannelID()).getName();
+                String ownerID = event.getGuild().getMemberById(scheduleToPrint.getUserID()).getNickname();
+
+                String readableScheduleAsString = "KEY: " + scheduleToPrint.getKey() + "; In Channel " + channelName + " made by " + ownerID + " with schedule command of: \"" + scheduleToPrint.getCommandRawString() + "\"";
+
+                event.getChannel().sendMessage(readableScheduleAsString).queue();
+            } else {
+                event.getChannel().sendMessage("Schedule with key \"" + key + "\" is not found!").queue();
+            }
+        }
+
+        private ObjectResult<Schedule> findScheduleByKey(String key, ArrayList<Schedule> guildSchedules){
+            Schedule fetchedSchedule = null;
+
+            for (Schedule scheduleInGuild : guildSchedules){
+                if (scheduleInGuild.getKey().equals(key)){
+                    fetchedSchedule = scheduleInGuild;
+                    break;
+                }
+            }
+
+            return new ObjectResult<>(fetchedSchedule);
+        }
+
+        private void printAllSchedulesInGuild(MessageReceivedEvent event, ArrayList<Schedule> guildSchedules) {
+            String schedulesAsReadableString = schedulesToReadableString(guildSchedules, event.getGuild());
+
+            event.getChannel().sendMessage(schedulesAsReadableString).queue();
+        }
+
+        private String schedulesToReadableString(List<Schedule> schedules, Guild guild) {
+            String guildName = guild.getName();
+
+            String readableString = "Schedules in " + guildName + "\n```";
+
+            for (Schedule schedule : schedules) {
+                String channelName = guild.getTextChannelById(schedule.getChannelID()).getName();
+                String ownerID = guild.getMemberById(schedule.getUserID()).getNickname();
+
+                readableString += "KEY: " + schedule.getKey() + "; In Channel " + channelName + " made by " + ownerID + " with schedule command of: \"" + schedule.getCommandRawString() + "\"";
+            }
+
+            readableString += "```";
+
+            return readableString;
         }
 
         @Override
@@ -164,7 +217,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         }
     }
 
-    private class addScheduleCommand implements  Command, AuthorityRequiring, Documented {
+    private class addScheduleCommand implements Command, AuthorityRequiring, Documented {
         @Override
         public String getCallsign() {
             return "add";
@@ -172,26 +225,26 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
-            if (tokens.size() < 3){
+            if (tokens.size() < 3) {
                 event.getChannel().sendMessage("Wrong number of arguments. Command should be:\n$>schedule add \"key\" \"hour\" \"commandToInvoke\"").queue();
                 return;
             }
 
-            if (event.getGuild() == null){
+            if (event.getGuild() == null) {
                 event.getChannel().sendMessage("This command can only be invoked in a server.").queue();
                 return;
             }
 
             ObjectResult<SchedulableCommand> schedulableCommandObjectResult = tryGetSchedulableCommandFromTokens(tokens);
 
-            if (schedulableCommandObjectResult.getResult()){
+            if (schedulableCommandObjectResult.getResult()) {
                 SchedulableCommand commandToSchedule = schedulableCommandObjectResult.getObject();
 
                 // TODO: Check if the user have authority to schedule the scheduled command.
 
                 ObjectResult<Schedule> scheduleObjectResult = tryGetScheduleFromRanCommand(event, rawString, tokens);
 
-                if (scheduleObjectResult.getResult()){
+                if (scheduleObjectResult.getResult()) {
                     Schedule newSchedule = scheduleObjectResult.getObject();
                     newSchedule.setOnScheduleIntervalListener(new OnScheduleIntervalReached());
 
@@ -204,18 +257,18 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             }
         }
 
-        private ObjectResult<Schedule> tryGetScheduleFromRanCommand(MessageReceivedEvent event, String rawString, List<String> tokens){
+        private ObjectResult<Schedule> tryGetScheduleFromRanCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
             try {
                 Schedule newSchedule = new Schedule(tokens.get(0), event.getAuthor().getId(), event.getGuild().getId(), event.getChannel().getId(), rawString, Integer.parseInt(tokens.get(1)));
                 return new ObjectResult<>(newSchedule);
             } catch (IndexOutOfBoundsException e) {
                 return new ObjectResult<>(null, "Wrong number of arguments. Command should be:\n$>schedule add \"hour\" \"commandToInvoke\"");
-            } catch (NumberFormatException e){
+            } catch (NumberFormatException e) {
                 return new ObjectResult<>(null, "Argument is of wrong type.  Command should be:\n$>schedule add \"hour\" \"commandToInvoke\" \nWhere \"Hour\" is a number.");
             }
         }
 
-        private ObjectResult<SchedulableCommand> tryGetSchedulableCommandFromTokens(List<String> tokens){
+        private ObjectResult<SchedulableCommand> tryGetSchedulableCommandFromTokens(List<String> tokens) {
             try {
                 SchedulableCommand commandToSchedule = null;
 
@@ -248,7 +301,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 }
 
                 String resultMessage = Utils.STRING_EMPTY;
-                if (commandToSchedule == null){
+                if (commandToSchedule == null) {
                     resultMessage = "Either the command could not be scheduled, or the command could not be found.";
                 }
                 return new ObjectResult<>(commandToSchedule, resultMessage);
@@ -260,7 +313,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
         @Override
         public Authority[] getRequiredAuthority() {
-            return new Authority[] { new UseSchedules() };
+            return new Authority[]{new UseSchedules()};
         }
 
         @Override
@@ -304,7 +357,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         @Override
         public Authority[] getRequiredAuthority() {
 
-            return new Authority[] { new UseSchedules() };
+            return new Authority[]{new UseSchedules()};
         }
 
         @Override
@@ -319,17 +372,17 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
     @Override
     public Command[] getCommands(CarlBot carlbot) {
-        return new Command[] { new ScheduleCommands(carlbot) };
+        return new Command[]{new ScheduleCommands(carlbot)};
     }
 
     @Override
     public Authority[] getRequiredAuthority() {
-        return new Authority[] { new UseSchedules() };
+        return new Authority[]{new UseSchedules()};
     }
 
     private class OnScheduleIntervalReached implements OnScheduleInterval {
         @Override
-        public void onScheduleIntervalCallback(Schedule schedule){
+        public void onScheduleIntervalCallback(Schedule schedule) {
             // TODO: Invoke command when the interval timer is reached.
         }
 
@@ -344,20 +397,20 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             List<Guild> guilds = event.getJDA().getGuilds();
             try {
                 loadAllSchedulesFromGuildsFromDatabase(guilds);
-            } catch (SQLException e){
+            } catch (SQLException e) {
                 logger.error("Failed to load schedules from guilds.");
             }
 
         }
 
-        private void loadAllSchedulesFromGuildsFromDatabase(List<Guild> guilds) throws SQLException{
-            for (Guild guild : guilds){
+        private void loadAllSchedulesFromGuildsFromDatabase(List<Guild> guilds) throws SQLException {
+            for (Guild guild : guilds) {
                 List<Schedule> schedulesInGuild = getSchedulesFromTable(guild);
 
                 schedules.addAll(schedulesInGuild);
             }
 
-            for (Schedule schedule : schedules){
+            for (Schedule schedule : schedules) {
                 schedule.startScheduleTimer();
             }
         }
