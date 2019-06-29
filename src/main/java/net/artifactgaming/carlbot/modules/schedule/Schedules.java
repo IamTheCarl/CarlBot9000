@@ -20,7 +20,7 @@ import java.util.*;
 
 public class Schedules implements Module, AuthorityRequiring, PersistentModule, Documented {
 
-    private AuthorityManagement authorityManagement;
+   private AuthorityManagement authorityManagement;
     private Persistence persistence;
 
     private Logger logger = LoggerFactory.getLogger(Schedules.class);
@@ -36,9 +36,9 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
     @Override
     public void setup(CarlBot carlbot) {
-        this.carlBot = carlBot;
+        carlBot = carlbot;
 
-        // Get the authority module.
+        //Get the authority module.
         authorityManagement = (AuthorityManagement) carlbot.getModule(AuthorityManagement.class);
 
         if (authorityManagement == null) {
@@ -60,8 +60,15 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
     private void loadAllSchedulableCommandsIntoHashMap() {
         for (Module module : carlBot.getModules()) {
             if (module instanceof SchedulableCommand) {
-                SchedulableCommand command = (SchedulableCommand) module;
-                schedulableModules.put(command.getCallsign(), command);
+                SchedulableCommand schedulableCommand = (SchedulableCommand) module;
+                schedulableModules.put(schedulableCommand.getCallsign(), schedulableCommand);
+            }
+
+            for (Command command : module.getCommands(carlBot)) {
+                if (command instanceof SchedulableCommand){
+                    SchedulableCommand schedulableCommand = (SchedulableCommand) command;
+                    schedulableModules.put(schedulableCommand.getCallsign(), schedulableCommand);
+                }
             }
         }
     }
@@ -77,11 +84,10 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             scheduleTable.alter().add()
                     .pushValue("key varchar")
                     .pushValue("owner_ID varchar")
-                    .pushValue("owner_name varchar")
                     .pushValue("guild_ID varchar")
                     .pushValue("channel_ID varchar")
                     .pushValue("command_rawString varchar")
-                    .pushValue("interval int")
+                    .pushValue("intervalHours varchar")
                     .execute();
         }
 
@@ -102,7 +108,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             String guildID = resultSet.getString("guild_ID");
             String channelID = resultSet.getString("channel_ID");
             String commandRawString = resultSet.getString("command_rawString");
-            int interval = resultSet.getInt("interval");
+            int interval = Integer.parseInt(resultSet.getString("intervalHours"));
 
             Schedule temp = new Schedule(key, ownerID, guildID, channelID, commandRawString, interval, false);
             temp.setOnScheduleIntervalListener(new OnScheduleIntervalReached());
@@ -117,11 +123,12 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         Table scheduleTable = getScheduleTable(guild);
 
         scheduleTable.insert()
+                .set("key", schedule.getKey())
                 .set("owner_ID", schedule.getUserID())
                 .set("guild_ID", schedule.getGuildID())
                 .set("channel_ID", schedule.getChannelID())
                 .set("command_rawString", schedule.getCommandRawString())
-                .set("interval", Integer.toString(schedule.getIntervalHours()))
+                .set("intervalHours", Integer.toString(schedule.getIntervalHours()))
                 .execute();
     }
 
@@ -212,7 +219,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 String channelName = event.getGuild().getTextChannelById(scheduleToPrint.getChannelID()).getName();
                 String ownerID = event.getGuild().getMemberById(scheduleToPrint.getUserID()).getNickname();
 
-                String readableScheduleAsString = "KEY: " + scheduleToPrint.getKey() + "; In Channel " + channelName + " made by " + ownerID + " with schedule command of: \"" + scheduleToPrint.getCommandRawString() + "\"";
+                String readableScheduleAsString = "KEY: `" + scheduleToPrint.getKey() + "`; In Channel `" + channelName + "` made by `" + ownerID +  "` with schedule command of: \"" + scheduleToPrint.getCommandRawString() + "\"";
 
                 event.getChannel().sendMessage(readableScheduleAsString).queue();
             } else {
@@ -296,6 +303,8 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                     newSchedule.setOnScheduleIntervalListener(new OnScheduleIntervalReached());
 
                     addScheduleToTable(event.getGuild(), newSchedule);
+                    schedules.add(newSchedule);
+                    event.getChannel().sendMessage("Schedule for the command added successfully").queue();
                 } else {
                     event.getChannel().sendMessage(scheduleObjectResult.getResultMessage()).queue();
                 }
@@ -312,6 +321,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
         private ObjectResult<Schedule> tryGetScheduleFromRanCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
             try {
+                // TODO: Maybe trim the raw string so that it won't include the call-sign?
                 Schedule newSchedule = new Schedule(tokens.get(0), event.getAuthor().getId(), event.getGuild().getId(), event.getChannel().getId(), rawString, Integer.parseInt(tokens.get(1)));
                 return new ObjectResult<>(newSchedule);
             } catch (IndexOutOfBoundsException e) {
@@ -325,11 +335,11 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             try {
                 SchedulableCommand commandToSchedule = null;
 
-                String token = tokens.get(1);
+                String token = tokens.get(2);
                 SchedulableCommand temp = schedulableModules.get(token);
 
                 if (temp instanceof CommandSet) {
-                    if (1 == tokens.size() - 1) {
+                    if (3 == tokens.size() - 1) {
                         return new ObjectResult<>(null, "Modules can not be scheduled.");
                     }
 
@@ -337,9 +347,9 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
                     boolean commandToScheduleFound = false;
                     for (Command commandInCommandSet : tempCommandSet.getCommands()) {
-                        // If this command can be scheduled, and it matches the callsign.
+                        // If this command can be scheduled, and it matches the call-sign.
                         if (commandInCommandSet instanceof SchedulableCommand) {
-                            if (commandInCommandSet.getCallsign().equals(tokens.get(2))) {
+                            if (commandInCommandSet.getCallsign().equals(tokens.get(3))) {
                                 commandToSchedule = (SchedulableCommand) commandInCommandSet;
                                 commandToScheduleFound = true;
                             }
@@ -359,7 +369,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 }
                 return new ObjectResult<>(commandToSchedule, resultMessage);
             } catch (IndexOutOfBoundsException e) {
-                // TODO: Error message for the user.
+                // TODO: Finish error message for the user.
                 return new ObjectResult<>(null, "Wrong number of arguments. ");
             }
         }

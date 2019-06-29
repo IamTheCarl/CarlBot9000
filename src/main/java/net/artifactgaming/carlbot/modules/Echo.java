@@ -4,14 +4,19 @@ import net.artifactgaming.carlbot.CarlBot;
 import net.artifactgaming.carlbot.Command;
 import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.Utils;
+import net.artifactgaming.carlbot.modules.schedule.SchedulableCommand;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class Echo implements Module, Documented {
 
-    private class EchoCommand implements Command {
+    private Logger logger = LoggerFactory.getLogger(Echo.class);
+
+    private class EchoCommand implements Command, SchedulableCommand {
 
         @Override
         public String getCallsign() {
@@ -43,6 +48,10 @@ public class Echo implements Module, Documented {
             return Echo.this;
         }
 
+        @Override
+        public void InvokeCommand(String guildID, String channelID, String inputRawString) {
+            logger.error("Echoed! With raw string: " + inputRawString);
+        }
     }
 
     @Override

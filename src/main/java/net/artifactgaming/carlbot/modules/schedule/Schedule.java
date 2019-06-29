@@ -48,6 +48,7 @@ public class Schedule {
 
     private void setupScheduleTimer(){
         scheduleTimer = new Timer();
+
         scheduleTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -55,7 +56,8 @@ public class Schedule {
                     onScheduleInterval.onScheduleIntervalCallback(Schedule.this);
                 }
             }
-        }, intervalHours*60*1000, intervalHours*60*1000);
+        }, 60000, 60000);
+        // TODO: Correctly set time based on hour.
     }
 
     public void setOnScheduleIntervalListener(OnScheduleInterval onScheduleInterval){
