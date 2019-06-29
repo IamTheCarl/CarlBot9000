@@ -235,6 +235,11 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 return;
             }
 
+            if (scheduleKeyExistsInGuild(tokens.get(0), event.getGuild())){
+                event.getChannel().sendMessage("Schedule with key \"" + tokens.get(0) + "\" already exists.");
+                return;
+            }
+
             ObjectResult<SchedulableCommand> schedulableCommandObjectResult = tryGetSchedulableCommandFromTokens(tokens);
 
             if (schedulableCommandObjectResult.getResult()) {
@@ -255,6 +260,18 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             } else {
                 event.getChannel().sendMessage(schedulableCommandObjectResult.getResultMessage()).queue();
             }
+        }
+
+        private boolean scheduleKeyExistsInGuild(String key, Guild guild) throws SQLException {
+            List<Schedule> schedulesInGuild = getSchedulesFromTable(guild);
+
+            for (Schedule schedule : schedulesInGuild){
+                if (schedule.getKey().equals(key)){
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private ObjectResult<Schedule> tryGetScheduleFromRanCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
