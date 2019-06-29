@@ -65,8 +65,10 @@ public class Schedule {
     }
 
     public void stopScheduleTimer(){
-        scheduleTimer.cancel();
-        scheduleTimer.purge();
+        if (scheduleTimer != null) {
+            scheduleTimer.cancel();
+            scheduleTimer.purge();
+        }
     }
 
     public String getKey(){return key;}

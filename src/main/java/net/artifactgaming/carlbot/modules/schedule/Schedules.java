@@ -156,8 +156,8 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             }
         }
 
-        private void removeScheduleByKey(String key, MessageReceivedEvent event) throws SQLException{
-            List<Schedule> schedulesInGuild = getSchedulesFromTable(event.getGuild());
+        private void removeScheduleByKey(String key, MessageReceivedEvent event) throws SQLException {
+            List<Schedule> schedulesInGuild = filterSchedulesByGuildID(event.getGuild().getId());
 
             ObjectResult<Schedule> scheduleObjectResult = tryGetScheduleByKeyFromList(key, schedulesInGuild);
 
@@ -168,9 +168,9 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 removeScheduleFromTable(event.getGuild(), scheduleToRemove);
                 schedules.remove(scheduleToRemove);
 
-                event.getChannel().sendMessage("Schedule of key \"" + key + "\" has been successfully removed.");
+                event.getChannel().sendMessage("Schedule of key \"" + key + "\" has been successfully removed.").queue();
             } else {
-                event.getChannel().sendMessage("Schedule of key \"" + key + "\" could not be found.");
+                event.getChannel().sendMessage("Schedule of key \"" + key + "\" could not be found.").queue();
             }
         }
 
@@ -234,6 +234,10 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         }
 
         private String schedulesToReadableString(List<Schedule> schedules, Guild guild) {
+            if (schedules.size() == 0){
+                return "There are no schedules in this server!";
+            }
+
             String guildName = guild.getName();
 
             String readableString = "Schedules in " + guildName + "\n```";
@@ -500,5 +504,18 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         }
 
         return new ObjectResult<>(foundSchedule);
+    }
+
+    private List<Schedule> filterSchedulesByGuildID(String guildID){
+
+        ArrayList<Schedule> filteredSchedules = new ArrayList<>();
+
+        for (Schedule schedule : schedules){
+            if (schedule.getGuildID().equals(guildID)){
+                filteredSchedules.add(schedule);
+            }
+        }
+
+        return filteredSchedules;
     }
 }
