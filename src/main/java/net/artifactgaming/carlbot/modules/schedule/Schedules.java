@@ -10,6 +10,7 @@ import net.artifactgaming.carlbot.modules.persistence.Table;
 import net.artifactgaming.carlbot.modules.quotes.Quotes;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.events.ReadyEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,10 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
     private Map<String, SchedulableCommand> schedulableModules = new HashMap<>();
 
     private ArrayList<Schedule> schedules;
+
+    public Schedules(){
+        CarlBot.addOnCarlbotReadyListener(new OnCarlBotReadyEvent());
+    }
 
     @Override
     public void setup(CarlBot carlbot) {
@@ -52,7 +57,6 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         }
 
         loadAllSchedulableCommandsIntoHashMap();
-        loadAllSchedulesFromDatabase();
     }
 
     private void loadAllSchedulableCommandsIntoHashMap(){
@@ -64,11 +68,6 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         }
     }
 
-    private void loadAllSchedulesFromDatabase(){
-        schedules = new ArrayList<Schedule>();
-        // TODO: Get all schedules in the database from all guides.
-
-    }
 
     private Table getScheduleTable(Guild guild) throws SQLException {
         Table table = persistence.getGuildTable(guild, this);
@@ -141,7 +140,12 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
             for (Schedule schedule :  guildSchedules){
                 // TODO: Print out all the schedules in the guild.
+                schedulesToReadableString(guildSchedules);
             }
+        }
+
+        private void schedulesToReadableString(List<Schedule> schedules){
+            
         }
 
         @Override
@@ -329,6 +333,34 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             // TODO: Invoke command when the interval timer is reached.
         }
 
+    }
+
+    private class OnCarlBotReadyEvent implements OnCarlBotReady {
+
+        @Override
+        public void OnCarlBotReady(ReadyEvent event) {
+            schedules = new ArrayList<Schedule>();
+
+            List<Guild> guilds = event.getJDA().getGuilds();
+            try {
+                loadAllSchedulesFromGuildsFromDatabase(guilds);
+            } catch (SQLException e){
+                logger.error("Failed to load schedules from guilds.");
+            }
+
+        }
+
+        private void loadAllSchedulesFromGuildsFromDatabase(List<Guild> guilds) throws SQLException{
+            for (Guild guild : guilds){
+                List<Schedule> schedulesInGuild = getSchedulesFromTable(guild);
+
+                schedules.addAll(schedulesInGuild);
+            }
+
+            for (Schedule schedule : schedules){
+                schedule.startScheduleTimer();
+            }
+        }
     }
 
     @Override
