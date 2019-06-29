@@ -7,7 +7,6 @@ import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
-import net.artifactgaming.carlbot.modules.quotes.Quotes;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.events.ReadyEvent;
@@ -15,8 +14,6 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.rmi.CORBA.Util;
-import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -128,7 +125,65 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 .execute();
     }
 
-    private class getScheduleCommand implements Command, Documented {
+    private void removeScheduleFromTable(Guild guild, Schedule schedule) throws SQLException {
+        Table scheduleTable = getScheduleTable(guild);
+
+        scheduleTable.delete()
+                .where("key", "=",schedule.getKey())
+                .execute();
+    }
+
+    private class RemoveScheduleCommand implements  Command, Documented {
+
+        @Override
+        public String getCallsign() {
+            return "remove";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            if (tokens.size() == 1){
+                removeScheduleByKey(tokens.get(0), event);
+            } else {
+                event.getChannel().sendMessage("Wrong number of argument, usage: \n >$schedule remove \"key\"");
+            }
+        }
+
+        private void removeScheduleByKey(String key, MessageReceivedEvent event) throws SQLException{
+            List<Schedule> schedulesInGuild = getSchedulesFromTable(event.getGuild());
+
+            ObjectResult<Schedule> scheduleObjectResult = tryGetScheduleByKeyFromList(key, schedulesInGuild);
+
+            if (scheduleObjectResult.getResult()){
+                Schedule scheduleToRemove = scheduleObjectResult.getObject();
+
+                scheduleToRemove.stopScheduleTimer();
+                removeScheduleFromTable(event.getGuild(), scheduleToRemove);
+                schedules.remove(scheduleToRemove);
+
+                event.getChannel().sendMessage("Schedule of key \"" + key + "\" has been successfully removed.");
+            } else {
+                event.getChannel().sendMessage("Schedule of key \"" + key + "\" could not be found.");
+            }
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Schedules.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Remove a schedule in this guild based on the schedule key.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "remove";
+        }
+    }
+
+    private class GetScheduleCommand implements Command, Documented {
 
         @Override
         public String getCallsign() {
@@ -144,12 +199,12 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             } else if (tokens.size() == 1) {
                 printScheduleInGuildByKey(tokens.get(0), event, guildSchedules);
             } else {
-                event.getChannel().sendMessage("Wrong number of argument, usage: \"$>schedule get <key>\"").queue();
+                event.getChannel().sendMessage("Wrong number of argument, usage:\n $>schedule get `optional_key_to_give`").queue();
             }
         }
 
         private void printScheduleInGuildByKey(String key, MessageReceivedEvent event, ArrayList<Schedule> guildSchedules){
-            ObjectResult<Schedule> scheduleObjectResult = findScheduleByKey(key, guildSchedules);
+            ObjectResult<Schedule> scheduleObjectResult = tryGetScheduleByKeyFromList(key, guildSchedules);
 
             if (scheduleObjectResult.getResult()){
                 Schedule scheduleToPrint = scheduleObjectResult.getObject();
@@ -163,19 +218,6 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             } else {
                 event.getChannel().sendMessage("Schedule with key \"" + key + "\" is not found!").queue();
             }
-        }
-
-        private ObjectResult<Schedule> findScheduleByKey(String key, ArrayList<Schedule> guildSchedules){
-            Schedule fetchedSchedule = null;
-
-            for (Schedule scheduleInGuild : guildSchedules){
-                if (scheduleInGuild.getKey().equals(key)){
-                    fetchedSchedule = scheduleInGuild;
-                    break;
-                }
-            }
-
-            return new ObjectResult<>(fetchedSchedule);
         }
 
         private void printAllSchedulesInGuild(MessageReceivedEvent event, ArrayList<Schedule> guildSchedules) {
@@ -217,7 +259,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         }
     }
 
-    private class addScheduleCommand implements Command, AuthorityRequiring, Documented {
+    private class AddScheduleCommand implements Command, AuthorityRequiring, Documented {
         @Override
         public String getCallsign() {
             return "add";
@@ -265,13 +307,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         private boolean scheduleKeyExistsInGuild(String key, Guild guild) throws SQLException {
             List<Schedule> schedulesInGuild = getSchedulesFromTable(guild);
 
-            for (Schedule schedule : schedulesInGuild){
-                if (schedule.getKey().equals(key)){
-                    return true;
-                }
-            }
-
-            return false;
+            return tryGetScheduleByKeyFromList(key, schedulesInGuild).getResult();
         }
 
         private ObjectResult<Schedule> tryGetScheduleFromRanCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
@@ -357,8 +393,9 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             commands = new CommandHandler(carlbot);
 
             commands.setSubName(this.getCallsign());
-            commands.addCommand(new addScheduleCommand());
-            commands.addCommand(new getScheduleCommand());
+            commands.addCommand(new AddScheduleCommand());
+            commands.addCommand(new GetScheduleCommand());
+            commands.addCommand(new RemoveScheduleCommand());
         }
 
         @Override
@@ -441,5 +478,17 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
     @Override
     public String getDocumentationCallsign() {
         return "schedule";
+    }
+
+    private ObjectResult<Schedule> tryGetScheduleByKeyFromList(String key, List<Schedule> schedules) {
+        Schedule foundSchedule = null;
+
+        for (Schedule schedule : schedules){
+            if (schedule.getKey().equals(key)){
+                foundSchedule = schedule;
+            }
+        }
+
+        return new ObjectResult<>(foundSchedule);
     }
 }
