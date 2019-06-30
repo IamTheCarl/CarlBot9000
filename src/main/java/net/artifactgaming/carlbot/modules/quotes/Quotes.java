@@ -18,8 +18,10 @@ import org.slf4j.LoggerFactory;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 
 public class Quotes implements Module, AuthorityRequiring, PersistentModule, Documented {
 
@@ -183,10 +185,22 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
 
             Table table = getQuoteTable(event.getGuild());
-            ResultSet resultSet = table.select().column("quote").orderBy("RANDOM()").limit(1).execute();
+            ResultSet resultSet = table.select().execute();
 
-            if (resultSet.next()) {
-                event.getChannel().sendMessage("\"" + resultSet.getString("quote") + "\"").queue();
+            List<String> quotesToChooseFrom = new ArrayList<String>();
+
+            while (resultSet.next()){
+                String quote = resultSet.getString("quote");
+                quotesToChooseFrom.add(quote);
+            }
+
+            if (quotesToChooseFrom.size() > 0) {
+                Random rand = new Random();
+
+                int randIndex = rand.nextInt(quotesToChooseFrom.size());
+                String quoteToShow = quotesToChooseFrom.get(randIndex);
+
+                event.getChannel().sendMessage("\"" + quoteToShow + "\"").queue();
             } else {
                 event.getChannel().sendMessage("This server doesn't have any quotes.").queue();
             }
