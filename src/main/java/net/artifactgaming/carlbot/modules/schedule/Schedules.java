@@ -9,6 +9,7 @@ import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.events.ReadyEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
@@ -298,7 +299,10 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             if (schedulableCommandObjectResult.getResult()) {
                 SchedulableCommand commandToSchedule = schedulableCommandObjectResult.getObject();
 
-                // TODO: Check if the user have authority to schedule the scheduled command.
+                if (!hasAuthorityToScheduleCommand(event.getMember(), commandToSchedule)){
+                    event.getChannel().sendMessage("You do not have authority to schedule the command!").queue();
+                    return;
+                }
 
                 ObjectResult<Schedule> scheduleObjectResult = tryGetScheduleFromRanCommand(event, rawString, tokens);
 
@@ -315,6 +319,17 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             } else {
                 event.getChannel().sendMessage(schedulableCommandObjectResult.getResultMessage()).queue();
             }
+        }
+
+        private boolean hasAuthorityToScheduleCommand(Member member, SchedulableCommand command) throws SQLException {
+
+            boolean hasAuthorityToScheduleCommand = true;
+            if (command instanceof AuthorityRequiring){
+                Authority[] authoritiesRequiredToScheduleCommand = ((AuthorityRequiring) command).getRequiredAuthority();
+
+                hasAuthorityToScheduleCommand = authorityManagement.checkHasAuthorities(member, authoritiesRequiredToScheduleCommand);
+            }
+            return hasAuthorityToScheduleCommand;
         }
 
         private boolean scheduleKeyExistsInGuild(String key, Guild guild) throws SQLException {
