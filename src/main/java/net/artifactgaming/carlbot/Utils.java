@@ -12,6 +12,8 @@ public class Utils {
 
     public final static String STRING_EMPTY = "";
 
+    public final static String CALLSIGN = "$>";
+
     /**
      * Removes @everyone and @here pings from messages.
      * @param sender User who sent the message.

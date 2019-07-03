@@ -47,7 +47,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
      */
     private Logger logger = LoggerFactory.getLogger(CarlBot.class);
 
-    private String callsign = "$>";
+    private String callsign = Utils.CALLSIGN;
     private List<String> ownerIDs = new ArrayList<>();
 
     private static List<OnCarlBotReady> onCarlBotReadyList = new ArrayList<OnCarlBotReady>();

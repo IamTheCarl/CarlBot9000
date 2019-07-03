@@ -6,9 +6,17 @@ import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.Utils;
 import net.artifactgaming.carlbot.modules.schedule.SchedulableCommand;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
+import net.dv8tion.jda.bot.JDABot;
+import net.dv8tion.jda.client.JDAClient;
+import net.dv8tion.jda.client.entities.impl.JDAClientImpl;
+import net.dv8tion.jda.core.JDA;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.core.managers.GuildController;
+import net.dv8tion.jda.core.managers.GuildManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.text.resources.da.JavaTimeSupplementary_da;
 
 import java.util.List;
 
@@ -50,7 +58,7 @@ public class Echo implements Module, Documented {
 
         @Override
         public void InvokeCommand(String guildID, String channelID, String inputRawString) {
-            logger.error("Echoed! With raw string: " + inputRawString);
+
         }
     }
 

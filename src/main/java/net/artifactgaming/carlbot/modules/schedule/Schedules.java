@@ -350,49 +350,6 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             }
         }
 
-        private ObjectResult<SchedulableCommand> tryGetSchedulableCommandFromTokens(List<String> tokens) {
-            try {
-                SchedulableCommand commandToSchedule = null;
-
-                String token = tokens.get(2);
-                SchedulableCommand temp = schedulableModules.get(token);
-
-                if (temp instanceof CommandSet) {
-                    if (3 == tokens.size() - 1) {
-                        return new ObjectResult<>(null, "Modules can not be scheduled.");
-                    }
-
-                    CommandSet tempCommandSet = (CommandSet) temp;
-
-                    boolean commandToScheduleFound = false;
-                    for (Command commandInCommandSet : tempCommandSet.getCommands()) {
-                        // If this command can be scheduled, and it matches the call-sign.
-                        if (commandInCommandSet instanceof SchedulableCommand) {
-                            if (commandInCommandSet.getCallsign().equals(tokens.get(3))) {
-                                commandToSchedule = (SchedulableCommand) commandInCommandSet;
-                                commandToScheduleFound = true;
-                            }
-                        }
-
-                        if (commandToScheduleFound) {
-                            break;
-                        }
-                    }
-                } else {
-                    commandToSchedule = temp;
-                }
-
-                String resultMessage = Utils.STRING_EMPTY;
-                if (commandToSchedule == null) {
-                    resultMessage = "Either the command could not be scheduled, or the command could not be found.";
-                }
-                return new ObjectResult<>(commandToSchedule, resultMessage);
-            } catch (IndexOutOfBoundsException e) {
-                // TODO: Finish error message for the user.
-                return new ObjectResult<>(null, "Wrong number of arguments. ");
-            }
-        }
-
         @Override
         public Authority[] getRequiredAuthority() {
             return new Authority[]{new UseSchedules()};
@@ -466,7 +423,24 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
     private class OnScheduleIntervalReached implements OnScheduleInterval {
         @Override
         public void onScheduleIntervalCallback(Schedule schedule) {
-            // TODO: Invoke command when the interval timer is reached.
+            // Cut off the callsign.
+            String substring = schedule.getCommandRawString().substring(Utils.CALLSIGN.length());
+            List<String> tokens = ShellSplitter.shellSplit(substring);
+
+            // TODO: Refactor
+            // Remove the "Schedule Add" at the front.
+            tokens.remove(0);
+            tokens.remove(0);
+
+            ObjectResult<SchedulableCommand> schedulableCommandObjectResult = tryGetSchedulableCommandFromTokens(tokens);
+
+            if (schedulableCommandObjectResult.getResult()){
+                SchedulableCommand commandToInvoke = schedulableCommandObjectResult.getObject();
+
+                commandToInvoke.InvokeCommand(schedule.getGuildID(), schedule.getChannelID(), schedule.getCommandRawString());
+            } else {
+                logger.error("Schedulable Command not found for schedule object: " + schedule.toString());
+            }
         }
 
     }
@@ -532,5 +506,48 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         }
 
         return filteredSchedules;
+    }
+
+    private ObjectResult<SchedulableCommand> tryGetSchedulableCommandFromTokens(List<String> tokens) {
+        try {
+            SchedulableCommand commandToSchedule = null;
+
+            String token = tokens.get(2);
+            SchedulableCommand temp = schedulableModules.get(token);
+
+            if (temp instanceof CommandSet) {
+                if (3 == tokens.size() - 1) {
+                    return new ObjectResult<>(null, "Modules can not be scheduled.");
+                }
+
+                CommandSet tempCommandSet = (CommandSet) temp;
+
+                boolean commandToScheduleFound = false;
+                for (Command commandInCommandSet : tempCommandSet.getCommands()) {
+                    // If this command can be scheduled, and it matches the call-sign.
+                    if (commandInCommandSet instanceof SchedulableCommand) {
+                        if (commandInCommandSet.getCallsign().equals(tokens.get(3))) {
+                            commandToSchedule = (SchedulableCommand) commandInCommandSet;
+                            commandToScheduleFound = true;
+                        }
+                    }
+
+                    if (commandToScheduleFound) {
+                        break;
+                    }
+                }
+            } else {
+                commandToSchedule = temp;
+            }
+
+            String resultMessage = Utils.STRING_EMPTY;
+            if (commandToSchedule == null) {
+                resultMessage = "Either the command could not be scheduled, or the command could not be found.";
+            }
+            return new ObjectResult<>(commandToSchedule, resultMessage);
+        } catch (IndexOutOfBoundsException e) {
+            // TODO: Finish error message for the user.
+            return new ObjectResult<>(null, "Wrong number of arguments. ");
+        }
     }
 }
