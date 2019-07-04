@@ -10,7 +10,9 @@ import net.dv8tion.jda.bot.JDABot;
 import net.dv8tion.jda.client.JDAClient;
 import net.dv8tion.jda.client.entities.impl.JDAClientImpl;
 import net.dv8tion.jda.core.JDA;
+import net.dv8tion.jda.core.entities.Channel;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.managers.GuildController;
 import net.dv8tion.jda.core.managers.GuildManager;
@@ -33,17 +35,7 @@ public class Echo implements Module, Documented {
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
-            String message = "[";
-
-            for (String token : tokens) {
-                message += token + " ";
-            }
-
-            if (message.length() > 1) {
-                message = message.substring(0, message.length() - 1);
-            }
-
-            message += "]";
+            String message = getMessageToEchoFromToken(tokens);
 
             // Clean the message up so it can't ping @everyone.
             message = Utils.cleanMessage(event.getAuthor(), message);
@@ -57,8 +49,26 @@ public class Echo implements Module, Documented {
         }
 
         @Override
-        public void InvokeCommand(String guildID, String channelID, String inputRawString) {
+        public void InvokeCommand(TextChannel channel, List<String> tokens) {
 
+            String message = getMessageToEchoFromToken(tokens);
+            channel.sendMessage(message).queue();
+        }
+
+        private String getMessageToEchoFromToken(List<String> tokens){
+            String message = "[";
+
+            for (String token : tokens) {
+                message += token + " ";
+            }
+
+            if (message.length() > 1) {
+                message = message.substring(0, message.length() - 1);
+            }
+
+            message += "]";
+
+            return message;
         }
     }
 

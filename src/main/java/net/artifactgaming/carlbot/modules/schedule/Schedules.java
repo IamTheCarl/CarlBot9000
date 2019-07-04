@@ -309,6 +309,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 if (scheduleObjectResult.getResult()) {
                     Schedule newSchedule = scheduleObjectResult.getObject();
                     newSchedule.setOnScheduleIntervalListener(new OnScheduleIntervalReached());
+                    newSchedule.setBindedChannel(event.getTextChannel());
 
                     addScheduleToTable(event.getGuild(), newSchedule);
                     schedules.add(newSchedule);
@@ -427,7 +428,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             String substring = schedule.getCommandRawString().substring(Utils.CALLSIGN.length());
             List<String> tokens = ShellSplitter.shellSplit(substring);
 
-            // TODO: Refactor
+            // TODO: Refactor finding of the command to invoke
             // Remove the "Schedule Add" at the front.
             tokens.remove(0);
             tokens.remove(0);
@@ -436,8 +437,9 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
             if (schedulableCommandObjectResult.getResult()){
                 SchedulableCommand commandToInvoke = schedulableCommandObjectResult.getObject();
+                tokens.remove(commandToInvoke.getCallsign());
 
-                commandToInvoke.InvokeCommand(schedule.getGuildID(), schedule.getChannelID(), schedule.getCommandRawString());
+                commandToInvoke.InvokeCommand(schedule.getBindedChannel(), tokens);
             } else {
                 logger.error("Schedulable Command not found for schedule object: " + schedule.toString());
             }
@@ -463,6 +465,11 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         private void loadAllSchedulesFromGuildsFromDatabase(List<Guild> guilds) throws SQLException {
             for (Guild guild : guilds) {
                 List<Schedule> schedulesInGuild = getSchedulesFromTable(guild);
+
+                // Find and set the text channel for each respective schedule.
+                for (Schedule schedule : schedulesInGuild){
+                    schedule.setBindedChannel(guild.getTextChannelById(schedule.getChannelID()));
+                }
 
                 schedules.addAll(schedulesInGuild);
             }
