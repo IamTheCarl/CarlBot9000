@@ -2,10 +2,16 @@ plugins {
     id 'java'
 }
 
-version='2019-6-11'
+def static getDate() {
+    def date = new Date()
+    def formattedDate = date.format('yyyyMMddHHmmss')
+    return formattedDate
+}
+
+version=getDate()
 
 group 'net.artifactgaming.carlbot'
-version '1.0-SNAPSHOT'
+// version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
 
