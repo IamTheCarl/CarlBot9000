@@ -271,7 +271,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             if (tokens.size() == 1) {
                 Authority authority = getAuthorityByName(tokens.get(0));
-                boolean has = checkHasAuthority(event.getMember(), authority);
+                boolean has = checkHasAuthority(event.getMember(), authority, true);
 
                 if (has) {
                     event.getChannel().sendMessage("You have this authority.").queue();
@@ -283,7 +283,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                 Member member = Utils.getMemberFromMessage(event, tokens.get(1));
 
                 if (member != null) {
-                    boolean has = checkHasAuthority(member, authority);
+                    boolean has = checkHasAuthority(member, authority, true);
 
                     if (has) {
                         event.getChannel().sendMessage("user has this authority.").queue();
@@ -341,6 +341,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
     private AuthorityState checkAuthorityRaw(String id, Guild guild, Authority authority) throws SQLException {
         boolean hasAuthority = false;
         String authorityName = authority.getClass().getCanonicalName();
+        logger.debug("Authority name: " + authorityName);
 
         Table table = getAuthorityTable(guild);
         ResultSet resultSet = table.select().where("discord_id", "=", id).execute();
@@ -348,7 +349,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
         // We need to check if the column exists.
         boolean exists = false;
         ResultSetMetaData rsmd = resultSet.getMetaData();
-        for (int i = 1; i < rsmd.getColumnCount(); i++) {
+        for (int i = 1; i <= rsmd.getColumnCount(); i++) {
             if (rsmd.getColumnName(i).equals(authorityName)) {
                 exists = true;
                 break;
@@ -371,6 +372,8 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                     }
                 }
             }
+        } else {
+            logger.debug("Authority column not found.");
         }
 
         resultSet.close();
@@ -399,6 +402,15 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
      * @return true if they have the authority, directly or by a role; false if otherwise.
      */
     public boolean checkHasAuthority(Member member, Authority authority, boolean ignoreOwner) throws SQLException {
+
+        // Never grant authority in a null case.
+        if (authority == null) {
+            logger.debug("Attempt to check null authority.");
+            return false;
+        }
+
+        logger.debug("Check authority: " + authority);
+
         // Do we even need to check?
         if (!ignoreOwner && (member.isOwner() || carlbot.checkIsOwner(member.getUser()))) {
             return true;
@@ -419,6 +431,7 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                     }
 
                     if (state == AuthorityState.Deny) {
+                        logger.debug("Authority denied specifically.");
                         return false;
                     }
                 }
