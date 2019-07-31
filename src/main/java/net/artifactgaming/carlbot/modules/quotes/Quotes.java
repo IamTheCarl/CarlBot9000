@@ -285,11 +285,95 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         }
     }
 
-    private class EditCommand implements Command, AuthorityRequiring, Documented {
+    private class EditNameCommand implements Command, AuthorityRequiring, Documented {
+        @Override
+        public String getCallsign() {
+            return "editName";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            if (tokens.size() == 2) {
+                Table table = getQuoteTable(event.getGuild());
+
+                // First we check if the quote already exists.
+                ResultSet resultSet = table.select().where("key", "=",tokens.get(0)).execute();
+
+                if (resultSet.next()) {
+
+                    if (event.getAuthor().getId().equals(resultSet.getString("owner")) || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
+                        String messageToSend = "";
+
+                        String quoteOwnerID;
+                        String quoteOwnerName;
+
+                        User owner = event.getJDA().getUserById(resultSet.getString("owner"));
+                        if (owner == null) {
+                            quoteOwnerName = event.getAuthor().getName();
+                            quoteOwnerID = event.getAuthor().getId();
+                            messageToSend += "Owner's account could not be found.\n" + "Updated this quote owner to be " + quoteOwnerName;
+                        } else {
+                            quoteOwnerID = owner.getId();
+                            quoteOwnerName = owner.getName();
+                        }
+
+                        String quoteContent = resultSet.getString("quote");
+
+                        // Delete the current quote first.
+                        table.delete().where("key", "=", tokens.get(0)).execute();
+
+                        // Insert the current quote again, but with the new key.
+                        table.insert().set("owner", quoteOwnerID)
+                                .set("owner_name", quoteOwnerName)
+                                .set("key", tokens.get(1))
+                                .set("quote", quoteContent).execute();
+
+                        messageToSend += "\n\n Quote Name Updated to be " + tokens.get(1);
+                        event.getChannel().sendMessage(messageToSend).queue();
+
+                    } else {
+                        event.getChannel().sendMessage(
+                                "You must own this quote or be the quote admin to edit it.").queue();
+                    }
+                } else {
+                    event.getChannel().sendMessage("A quote for this key does not exist. "
+                            + "You can make a new quote using the quote add command.").queue();
+
+                }
+
+            } else {
+                event.getChannel().sendMessage(
+                        "Wrong number of arguments. Command should be:\n$>quote edit \"key\" \"new quote name\"").queue();
+            }
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Edit the name of a quote that currently exists.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "editName";
+        }
+
+    }
+
+    private class EditContentCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
-            return "edit";
+            return "editContent";
         }
 
         @Override
@@ -325,7 +409,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
             } else {
                 event.getChannel().sendMessage(
-                        "Wrong number of arguments. Command should be:\n$>quote edit \"key\" \"new quote\"").queue();
+                        "Wrong number of arguments. Command should be:\n$>quote edit \"key\" \"new quote content\"").queue();
             }
         }
 
@@ -341,12 +425,39 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public String getDocumentation() {
-            return "Edit a quote that currently exists.";
+            return "Edit the content of a quote that currently exists.";
         }
 
         @Override
         public String getDocumentationCallsign() {
+            return "editContent";
+        }
+    }
+
+    @Deprecated
+    private class EditCommand implements Command, AuthorityRequiring {
+
+        @Override
+        public String getCallsign() {
             return "edit";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            // TODO: Delete after a few more releases or something, when the peeps figure out this new thing
+            event.getChannel().sendMessage(
+                    "This command is now deprecated.\nUse `editContent` to edit the contents of the quote.\nOtherwise, use `editName` to edit the name of the quote.")
+                    .queue();
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
         }
     }
 
@@ -484,9 +595,12 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             commands.addCommand(new DeleteAllCommand());
             commands.addCommand(new RandomCommand());
             commands.addCommand(new InfoCommand());
-            commands.addCommand(new EditCommand());
+            commands.addCommand(new EditContentCommand());
+            commands.addCommand(new EditNameCommand());
             commands.addCommand(new GiveAwayCommand());
             commands.addCommand(new GetCommand());
+
+            commands.addCommand(new EditCommand());
         }
 
         @Override
