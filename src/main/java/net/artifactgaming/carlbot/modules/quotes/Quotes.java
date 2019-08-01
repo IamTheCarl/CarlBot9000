@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -285,15 +284,21 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         }
     }
 
-    private class EditNameCommand implements Command, AuthorityRequiring, Documented {
+    private class RenameCommand implements Command, AuthorityRequiring, Documented {
         @Override
         public String getCallsign() {
-            return "editName";
+            return "rename";
         }
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             if (tokens.size() == 2) {
+                // Exit if another quote with the name to replace to exists.
+                if (QuoteWithKeyExistsInGuild(event.getGuild(), tokens.get(1))){
+                    event.getChannel().sendMessage("A quote with the new key name given already exists!").queue();
+                    return;
+                }
+
                 Table table = getQuoteTable(event.getGuild());
 
                 // First we check if the quote already exists.
@@ -343,9 +348,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
             } else {
                 event.getChannel().sendMessage(
-                        "Wrong number of arguments. Command should be:\n$>quote edit \"key\" \"new quote name\"").queue();
+                        "Wrong number of arguments. Command should be:\n$>quote rename \"key\" \"new quote name\"").queue();
             }
         }
+
 
         @Override
         public Authority[] getRequiredAuthority() {
@@ -364,16 +370,16 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public String getDocumentationCallsign() {
-            return "editName";
+            return "rename";
         }
 
     }
 
-    private class EditContentCommand implements Command, AuthorityRequiring, Documented {
+    private class EditCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
-            return "editContent";
+            return "edit";
         }
 
         @Override
@@ -430,34 +436,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public String getDocumentationCallsign() {
-            return "editContent";
-        }
-    }
-
-    @Deprecated
-    private class EditCommand implements Command, AuthorityRequiring {
-
-        @Override
-        public String getCallsign() {
             return "edit";
-        }
-
-        @Override
-        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
-            // TODO: Delete after a few more releases or something, when the peeps figure out this new thing
-            event.getChannel().sendMessage(
-                    "This command is now deprecated.\nUse `editContent` to edit the contents of the quote.\nOtherwise, use `editName` to edit the name of the quote.")
-                    .queue();
-        }
-
-        @Override
-        public Authority[] getRequiredAuthority() {
-            return new Authority[] { new UseQuotes() };
-        }
-
-        @Override
-        public Module getParentModule() {
-            return Quotes.this;
         }
     }
 
@@ -595,12 +574,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             commands.addCommand(new DeleteAllCommand());
             commands.addCommand(new RandomCommand());
             commands.addCommand(new InfoCommand());
-            commands.addCommand(new EditContentCommand());
-            commands.addCommand(new EditNameCommand());
+            commands.addCommand(new EditCommand());
+            commands.addCommand(new RenameCommand());
             commands.addCommand(new GiveAwayCommand());
             commands.addCommand(new GetCommand());
-
-            commands.addCommand(new EditCommand());
         }
 
         @Override
@@ -686,5 +663,19 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
     @Override
     public Command[] getCommands(CarlBot carlbot) {
         return new Command[] { new QuoteCommand(carlbot) };
+    }
+
+    private boolean QuoteWithKeyExistsInGuild(Guild guild, String key) throws SQLException {
+        Table table = getQuoteTable(guild);
+        ResultSet resultSet = table.select().where("key", "=",key).execute();
+
+        boolean quoteExists = false;
+        if (resultSet.next()){
+            quoteExists = true;
+        }
+
+        resultSet.close();
+
+        return quoteExists;
     }
 }
