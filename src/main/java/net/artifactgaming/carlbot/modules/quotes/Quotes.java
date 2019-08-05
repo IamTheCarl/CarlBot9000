@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -285,6 +284,97 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         }
     }
 
+    private class RenameCommand implements Command, AuthorityRequiring, Documented {
+        @Override
+        public String getCallsign() {
+            return "rename";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            if (tokens.size() == 2) {
+                // Exit if another quote with the name to replace to exists.
+                if (QuoteWithKeyExistsInGuild(event.getGuild(), tokens.get(1))){
+                    event.getChannel().sendMessage("A quote with the new key name given already exists!").queue();
+                    return;
+                }
+
+                Table table = getQuoteTable(event.getGuild());
+
+                // First we check if the quote already exists.
+                ResultSet resultSet = table.select().where("key", "=",tokens.get(0)).execute();
+
+                if (resultSet.next()) {
+
+                    if (event.getAuthor().getId().equals(resultSet.getString("owner")) || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
+                        String messageToSend = "";
+
+                        String quoteOwnerID;
+                        String quoteOwnerName;
+
+                        User owner = event.getJDA().getUserById(resultSet.getString("owner"));
+                        if (owner == null) {
+                            quoteOwnerName = event.getAuthor().getName();
+                            quoteOwnerID = event.getAuthor().getId();
+                            messageToSend += "Owner's account could not be found.\n" + "Updated this quote owner to be " + quoteOwnerName;
+                        } else {
+                            quoteOwnerID = owner.getId();
+                            quoteOwnerName = owner.getName();
+                        }
+
+                        String quoteContent = resultSet.getString("quote");
+
+                        // Delete the current quote first.
+                        table.delete().where("key", "=", tokens.get(0)).execute();
+
+                        // Insert the current quote again, but with the new key.
+                        table.insert().set("owner", quoteOwnerID)
+                                .set("owner_name", quoteOwnerName)
+                                .set("key", tokens.get(1))
+                                .set("quote", quoteContent).execute();
+
+                        messageToSend += "\n\n Quote Name Updated to be " + tokens.get(1);
+                        event.getChannel().sendMessage(messageToSend).queue();
+
+                    } else {
+                        event.getChannel().sendMessage(
+                                "You must own this quote or be the quote admin to edit it.").queue();
+                    }
+                } else {
+                    event.getChannel().sendMessage("A quote for this key does not exist. "
+                            + "You can make a new quote using the quote add command.").queue();
+
+                }
+
+            } else {
+                event.getChannel().sendMessage(
+                        "Wrong number of arguments. Command should be:\n$>quote rename \"key\" \"new quote name\"").queue();
+            }
+        }
+
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Edit the name of a quote that currently exists.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "rename";
+        }
+
+    }
+
     private class EditCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
@@ -325,7 +415,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
             } else {
                 event.getChannel().sendMessage(
-                        "Wrong number of arguments. Command should be:\n$>quote edit \"key\" \"new quote\"").queue();
+                        "Wrong number of arguments. Command should be:\n$>quote edit \"key\" \"new quote content\"").queue();
             }
         }
 
@@ -341,7 +431,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public String getDocumentation() {
-            return "Edit a quote that currently exists.";
+            return "Edit the content of a quote that currently exists.";
         }
 
         @Override
@@ -485,6 +575,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             commands.addCommand(new RandomCommand());
             commands.addCommand(new InfoCommand());
             commands.addCommand(new EditCommand());
+            commands.addCommand(new RenameCommand());
             commands.addCommand(new GiveAwayCommand());
             commands.addCommand(new GetCommand());
         }
@@ -572,5 +663,19 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
     @Override
     public Command[] getCommands(CarlBot carlbot) {
         return new Command[] { new QuoteCommand(carlbot) };
+    }
+
+    private boolean QuoteWithKeyExistsInGuild(Guild guild, String key) throws SQLException {
+        Table table = getQuoteTable(guild);
+        ResultSet resultSet = table.select().where("key", "=",key).execute();
+
+        boolean quoteExists = false;
+        if (resultSet.next()){
+            quoteExists = true;
+        }
+
+        resultSet.close();
+
+        return quoteExists;
     }
 }
