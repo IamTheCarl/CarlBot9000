@@ -20,8 +20,21 @@ public class Utils {
      * @param message The raw content of the message itself.
      * @return The cleaned version of the message.
      */
+    @Deprecated
     public static String cleanMessage(User sender, String message) {
 
+        message = message.replace("@everyone", "@.everyone");
+        message = message.replace("@here","@.here");
+
+        return message;
+    }
+
+    /**
+     * Removes @everyone and @here pings from messages.
+     * @param message The raw content of the message itself.
+     * @return The cleaned version of the message.
+     */
+    public static String cleanMessage(String message){
         message = message.replace("@everyone", "@.everyone");
         message = message.replace("@here","@.here");
 

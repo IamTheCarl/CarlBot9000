@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class Schedules implements Module, AuthorityRequiring, PersistentModule, Documented {
 
@@ -248,7 +250,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 String channelName = guild.getTextChannelById(schedule.getChannelID()).getName();
                 String ownerID = guild.getMemberById(schedule.getUserID()).getNickname();
 
-                readableString += "KEY: " + schedule.getKey() + "; In Channel " + channelName + " made by " + ownerID + " with schedule command of: \"" + schedule.getCommandRawString() + "\"";
+                readableString += "KEY: " + schedule.getKey() + "; In Channel " + channelName + " made by " + ownerID + " with schedule command of: \"" + schedule.getCommandRawString() + "\"" + "\r\n";
             }
 
             readableString += "```";
@@ -291,11 +293,15 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             }
 
             if (scheduleKeyExistsInGuild(tokens.get(0), event.getGuild())){
-                event.getChannel().sendMessage("Schedule with key \"" + tokens.get(0) + "\" already exists.");
+                event.getChannel().sendMessage("Schedule with key \"" + tokens.get(0) + "\" already exists.").queue();
                 return;
             }
 
-            ObjectResult<SchedulableCommand> schedulableCommandObjectResult = tryGetSchedulableCommandFromTokens(tokens);
+            List<String> tokenWithoutScheduleCommand = new ArrayList<>(tokens);
+            tokenWithoutScheduleCommand.remove(0);
+            tokenWithoutScheduleCommand.remove(0);
+
+            ObjectResult<SchedulableCommand> schedulableCommandObjectResult = tryGetSchedulableCommandFromTokens(tokenWithoutScheduleCommand);
 
             if (schedulableCommandObjectResult.getResult()) {
                 SchedulableCommand commandToSchedule = schedulableCommandObjectResult.getObject();
@@ -442,7 +448,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 SchedulableCommand commandToInvoke = schedulableCommandObjectResult.getObject();
                 tokens.remove(commandToInvoke.getCallsign());
 
-                commandToInvoke.InvokeCommand(schedule.getBindedChannel(), tokens);
+                commandToInvoke.invokeCommandAsSchedulable(schedule.getBindedChannel(), tokens);
             } else {
                 logger.error("Schedulable Command not found for schedule object: " + schedule.toString());
             }
@@ -481,6 +487,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 schedule.startScheduleTimer();
             }
         }
+
     }
 
     @Override
@@ -519,33 +526,45 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
     }
 
     private ObjectResult<SchedulableCommand> tryGetSchedulableCommandFromTokens(List<String> tokens) {
-        try {
+        ///region: Local_Function
+
+        java.util.function.BiFunction<CommandSet, String, ObjectResult<SchedulableCommand>> tryFindSchedulableCommandWithCallsignFromCommandSet = (commandSet, callsign) -> {
+            for (Command commandInCommandSet : commandSet.getCommands()) {
+                // If this command can be scheduled, and it matches the call-sign.
+                if (commandInCommandSet instanceof SchedulableCommand) {
+                    if (commandInCommandSet.getCallsign().equals(callsign)) {
+                        // This CommandSet has a command with the given callsign that can be scheduled.
+                        return new ObjectResult<>((SchedulableCommand) commandInCommandSet);
+                    }
+                }
+            }
+
+            return new ObjectResult<>(null);
+        };
+
+        ///endregion
+
+        try{
+
             SchedulableCommand commandToSchedule = null;
 
             String token = tokens.get(0);
             SchedulableCommand temp = schedulableModules.get(token);
 
             if (temp instanceof CommandSet) {
-                if (3 == tokens.size() - 1) {
+                if (tokens.size() < 2) {
                     return new ObjectResult<>(null, "Modules can not be scheduled.");
                 }
 
                 CommandSet tempCommandSet = (CommandSet) temp;
 
-                boolean commandToScheduleFound = false;
-                for (Command commandInCommandSet : tempCommandSet.getCommands()) {
-                    // If this command can be scheduled, and it matches the call-sign.
-                    if (commandInCommandSet instanceof SchedulableCommand) {
-                        if (commandInCommandSet.getCallsign().equals(tokens.get(1))) {
-                            commandToSchedule = (SchedulableCommand) commandInCommandSet;
-                            commandToScheduleFound = true;
-                        }
-                    }
+                ObjectResult<SchedulableCommand> resultOfFindingSchedulableCommandWithCallsignFromCommandSet = tryFindSchedulableCommandWithCallsignFromCommandSet.apply(tempCommandSet, tokens.get(1));
 
-                    if (commandToScheduleFound) {
-                        break;
-                    }
+                if (resultOfFindingSchedulableCommandWithCallsignFromCommandSet.getResult()){
+                    tokens.remove(0);
+                    commandToSchedule = resultOfFindingSchedulableCommandWithCallsignFromCommandSet.getObject();
                 }
+
             } else {
                 commandToSchedule = temp;
             }
@@ -560,4 +579,5 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             return new ObjectResult<>(null, "Wrong number of arguments. ");
         }
     }
+
 }

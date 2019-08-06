@@ -48,7 +48,7 @@ public class Echo implements Module, Documented {
         }
 
         @Override
-        public void InvokeCommand(TextChannel channel, List<String> tokens) {
+        public void invokeCommandAsSchedulable(TextChannel channel, List<String> tokens) {
 
             String message = getMessageToEchoFromToken(tokens);
             channel.sendMessage(message).queue();

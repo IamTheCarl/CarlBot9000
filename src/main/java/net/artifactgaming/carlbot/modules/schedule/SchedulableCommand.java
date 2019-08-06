@@ -7,5 +7,5 @@ import net.dv8tion.jda.core.entities.TextChannel;
 import java.util.List;
 
 public interface SchedulableCommand extends Command {
-    void InvokeCommand(TextChannel channel, List<String> tokens);
+    void invokeCommandAsSchedulable(TextChannel channel, List<String> tokens);
 }
