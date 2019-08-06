@@ -1,15 +1,19 @@
 package net.artifactgaming.carlbot.modules.quotes;
 
+import jdk.nashorn.internal.runtime.Debug;
 import net.artifactgaming.carlbot.*;
+import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.authority.Authority;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
+import net.artifactgaming.carlbot.modules.schedule.SchedulableCommand;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
@@ -512,7 +516,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         }
     }
 
-    private class GetCommand implements Command, AuthorityRequiring, Documented {
+    private class GetCommand implements Command, AuthorityRequiring, Documented, SchedulableCommand {
 
         @Override
         public String getCallsign() {
@@ -521,23 +525,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
-            Table table = getQuoteTable(event.getGuild());
-
-            if (!tokens.isEmpty()) {
-                ResultSet resultSet = table.select().where("key", "=", tokens.get(0))
-                        .execute();
-
-                if (resultSet.next()) {
-                    String quote = resultSet.getString("quote");
-
-                    event.getChannel().sendMessage("[" + Utils.cleanMessage(event.getAuthor(), quote) + "]")
-                            .queue();
-                } else {
-                    event.getChannel().sendMessage("Could not find a quote by that key.").queue();
-                }
-            } else {
-                event.getChannel().sendMessage("You need to provide a key to find the quote you want.").queue();
-            }
+            FindQuoteByTokensAndSendToTextChannel(event.getTextChannel(), tokens);
         }
 
         @Override
@@ -559,9 +547,40 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         public String getDocumentationCallsign() {
             return "get";
         }
+
+        @Override
+        public void invokeCommandAsSchedulable(TextChannel channel, List<String> tokens) {
+            try {
+                FindQuoteByTokensAndSendToTextChannel(channel, tokens);
+            } catch (SQLException e){
+                logger.error("Failed fetch quotes from guild," + channel.getGuild().getName() + ", error message: " + e.getMessage());
+                channel.sendMessage("Error fetching quote from the server!").queue();
+            }
+        }
+
+        private void FindQuoteByTokensAndSendToTextChannel(TextChannel channel, List<String> tokens) throws SQLException {
+            Table table = getQuoteTable(channel.getGuild());
+
+            if (!tokens.isEmpty()) {
+                ResultSet resultSet = table.select().where("key", "=", tokens.get(0))
+                        .execute();
+
+                if (resultSet.next()) {
+                    String quote = resultSet.getString("quote");
+
+                    channel.sendMessage("[" + Utils.cleanMessage(quote) + "]")
+                            .queue();
+                } else {
+                    channel.sendMessage("Could not find a quote by that key.").queue();
+                }
+            } else {
+                channel.sendMessage("You need to provide a key to find the quote you want.").queue();
+            }
+
+        }
     }
 
-    private class QuoteCommand implements Command, AuthorityRequiring, Documented, CommandSet {
+    private class QuoteCommand implements Command, AuthorityRequiring, Documented, CommandSet, SchedulableCommand {
 
         private CommandHandler commands;
 
@@ -612,6 +631,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         public Collection<Command> getCommands() {
             return commands.getCommands();
+        }
+
+        @Override
+        public void invokeCommandAsSchedulable(TextChannel channel, List<String> tokens) {
+            commands.invokeCommandAsSchedulable(channel, tokens);
         }
     }
 
