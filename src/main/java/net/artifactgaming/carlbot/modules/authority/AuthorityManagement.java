@@ -1,6 +1,7 @@
 package net.artifactgaming.carlbot.modules.authority;
 
 import net.artifactgaming.carlbot.*;
+import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.persistence.*;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;

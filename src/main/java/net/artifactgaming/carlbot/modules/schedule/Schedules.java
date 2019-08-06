@@ -1,6 +1,7 @@
 package net.artifactgaming.carlbot.modules.schedule;
 
 import net.artifactgaming.carlbot.*;
+import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.authority.Authority;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
@@ -429,7 +430,9 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             List<String> tokens = ShellSplitter.shellSplit(substring);
 
             // TODO: Refactor finding of the command to invoke
-            // Remove the "Schedule Add" at the front.
+            // Remove the "Schedule Add 'key' 'time'" at the front.
+            tokens.remove(0);
+            tokens.remove(0);
             tokens.remove(0);
             tokens.remove(0);
 
@@ -519,7 +522,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
         try {
             SchedulableCommand commandToSchedule = null;
 
-            String token = tokens.get(2);
+            String token = tokens.get(0);
             SchedulableCommand temp = schedulableModules.get(token);
 
             if (temp instanceof CommandSet) {
@@ -533,7 +536,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 for (Command commandInCommandSet : tempCommandSet.getCommands()) {
                     // If this command can be scheduled, and it matches the call-sign.
                     if (commandInCommandSet instanceof SchedulableCommand) {
-                        if (commandInCommandSet.getCallsign().equals(tokens.get(3))) {
+                        if (commandInCommandSet.getCallsign().equals(tokens.get(1))) {
                             commandToSchedule = (SchedulableCommand) commandInCommandSet;
                             commandToScheduleFound = true;
                         }

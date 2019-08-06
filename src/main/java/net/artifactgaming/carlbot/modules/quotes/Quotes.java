@@ -1,6 +1,7 @@
 package net.artifactgaming.carlbot.modules.quotes;
 
 import net.artifactgaming.carlbot.*;
+import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.authority.Authority;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
