@@ -37,7 +37,7 @@ public class Echo implements Module, Documented {
             String message = getMessageToEchoFromToken(tokens);
 
             // Clean the message up so it can't ping @everyone.
-            message = Utils.cleanMessage(event.getAuthor(), message);
+            message = Utils.cleanMessage(message);
 
             event.getChannel().sendMessage(message).queue();
         }

@@ -349,7 +349,6 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
 
         private ObjectResult<Schedule> tryGetScheduleFromRanCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
             try {
-                // TODO: Maybe trim the raw string so that it won't include the call-sign?
                 Schedule newSchedule = new Schedule(tokens.get(0), event.getAuthor().getId(), event.getGuild().getId(), event.getChannel().getId(), rawString, Integer.parseInt(tokens.get(1)));
                 return new ObjectResult<>(newSchedule);
             } catch (IndexOutOfBoundsException e) {
@@ -576,8 +575,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
             }
             return new ObjectResult<>(commandToSchedule, resultMessage);
         } catch (IndexOutOfBoundsException e) {
-            // TODO: Finish error message for the user.
-            return new ObjectResult<>(null, "Wrong number of arguments. ");
+            return new ObjectResult<>(null, "Wrong number of arguments for your command that you are trying to schedule.");
         }
     }
 

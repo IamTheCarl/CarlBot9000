@@ -22,7 +22,6 @@ public class Utils {
      */
     @Deprecated
     public static String cleanMessage(User sender, String message) {
-
         message = message.replace("@everyone", "@.everyone");
         message = message.replace("@here","@.here");
 
