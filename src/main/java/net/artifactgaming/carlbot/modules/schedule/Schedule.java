@@ -7,6 +7,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class Schedule {
+
+    private final static long ONE_HOUR_IN_MILISECONDS = 3600000;
+
     private String key;
     private String userID;
     private String guildID;
@@ -84,6 +87,8 @@ public class Schedule {
     private void setupScheduleTimer(){
         scheduleTimer = new Timer();
 
+        long delayAndPeriod = ONE_HOUR_IN_MILISECONDS * intervalHours;
+
         scheduleTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -91,8 +96,7 @@ public class Schedule {
                     onScheduleInterval.onScheduleIntervalCallback(Schedule.this);
                 }
             }
-        }, 60000, 60000);
-        // TODO: Correctly set time based on hour.
+        }, delayAndPeriod, delayAndPeriod);
     }
 
     public void setOnScheduleIntervalListener(OnScheduleInterval onScheduleInterval){

@@ -297,6 +297,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
                 return;
             }
 
+            // Removes the the argument "key" and "hour" before attempting to find the command we are trying to schedule.
             List<String> tokenWithoutScheduleCommand = new ArrayList<>(tokens);
             tokenWithoutScheduleCommand.remove(0);
             tokenWithoutScheduleCommand.remove(0);
