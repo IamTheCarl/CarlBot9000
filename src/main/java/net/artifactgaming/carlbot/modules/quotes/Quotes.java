@@ -1,6 +1,5 @@
 package net.artifactgaming.carlbot.modules.quotes;
 
-import jdk.nashorn.internal.runtime.Debug;
 import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.authority.Authority;
@@ -25,8 +24,35 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class Quotes implements Module, AuthorityRequiring, PersistentModule, Documented {
+
+    ///region SQL_TableNames
+    /**
+     * Used in the SQL Data table to represent the column name to store owner ID.
+     */
+    private static final String OWNER_ID = "owner";
+
+    /**
+     * Used in the SQL Data table to represent the column name to store the owner name.
+     */
+    private static final String OWNER_NAME = "owner_name";
+
+    /**
+     * Used in the SQL Data table to represent the column name to store the key of the quote.
+     */
+    private static final String QUOTE_KEY = "key";
+
+    /**
+     * Used in the SQL Data table to represent the column name to store the key of the quote.
+     */
+    private static final String QUOTE_CONTENT = "quote";
+
+    ///endregion
 
     private AuthorityManagement authorityManagement;
     private Persistence persistence;
@@ -38,6 +64,85 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         return new Authority[] { new QuoteAdmin(), new UseQuotes() };
     }
 
+    /**
+     * Use "updateGuildTableWithQuoteByQuoteKey" instead.
+     */
+    @Deprecated
+    private void replaceQuoteOnGuild(Guild guild, Quote quote) throws SQLException{
+        ObjectResult<Quote> fetchOriginalQuoteResult = tryFetchQuoteFromGuildTableByQuoteKey(guild, quote.getKey());
+
+        if (fetchOriginalQuoteResult.getResult()){
+            Quote originalQuote = fetchOriginalQuoteResult.getObject();
+            deleteQuoteFromGuildTableByQuoteKey(guild, originalQuote.getKey());
+        }
+
+        addQuoteToGuildTable(guild, quote);
+    }
+
+    private void updateGuildTableWithQuoteByQuoteKey(Guild guild, Quote quote, String quoteKey) throws SQLException {
+        Table table = getQuoteTable(guild);
+
+        table.update()
+                .set(OWNER_ID, quote.getOwnerID())
+                .set(OWNER_NAME, quote.getOwnerName())
+                .set(QUOTE_KEY, quote.getKey())
+                .set(QUOTE_CONTENT, quote.getContent())
+                .where("key", "=", quoteKey)
+                .execute();
+    }
+
+    private ObjectResult<Quote> tryFetchQuoteFromGuildTableByQuoteKey(Guild guild, String quoteKey) throws SQLException {
+        Table table = getQuoteTable(guild);
+
+        ResultSet resultSet = table.select().where(QUOTE_KEY, "=", quoteKey).execute();
+
+        if (resultSet.next()){
+            Quote foundQuote = new Quote(
+                    resultSet.getString(OWNER_ID),
+                    resultSet.getString(OWNER_NAME),
+                    resultSet.getString(QUOTE_KEY),
+                    resultSet.getString(QUOTE_CONTENT)
+            );
+
+            return new ObjectResult<>(foundQuote);
+        } else {
+            return new ObjectResult<>(null);
+        }
+    }
+
+    private void deleteQuoteFromGuildTableByQuoteKey(Guild guild, String quoteKey) throws SQLException {
+        Table table = getQuoteTable(guild);
+
+        table.delete()
+                .where("key", "=", quoteKey)
+                .execute();
+    }
+
+    private void addQuoteToGuildTable(Guild guild, Quote quoteToAdd) throws SQLException {
+        Table table = getQuoteTable(guild);
+
+        table.insert().set(OWNER_ID, quoteToAdd.getOwnerID())
+                .set(OWNER_NAME, quoteToAdd.getOwnerName())
+                .set(QUOTE_KEY, quoteToAdd.getKey())
+                .set(QUOTE_CONTENT, quoteToAdd.getContent()).execute();
+    }
+
+    private boolean quoteKeyExistsOnGuildTable(Guild guild, String quoteKey) throws SQLException {
+        Table table = getQuoteTable(guild);
+
+        ResultSet resultSet = table.select().where("key", "=", quoteKey).execute();
+
+        boolean quoteExists = false;
+
+        if (resultSet.next()){
+            quoteExists = true;
+        }
+
+        resultSet.close();
+
+        return quoteExists;
+    }
+
     private class AddCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
@@ -47,21 +152,26 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+
+            ///region Local_Function
+
+            Supplier<Quote> getQuoteDataFromMessage = () -> {
+                User author = event.getMessage().getAuthor();
+                return new Quote(author.getId(), author.getName(), tokens.get(0), tokens.get(1));
+            };
+
+            ///endregion
+
             if (tokens.size() == 2) {
-                Table table = getQuoteTable(event.getGuild());
+                Guild guild = event.getGuild();
 
-                // First we check if the quote already exists.
-                ResultSet resultSet = table.select().where("key", "=",tokens.get(0)).execute();
-
-                if (resultSet.next()) {
+                if (quoteKeyExistsOnGuildTable(guild, tokens.get(0))) {
                     event.getChannel().sendMessage("A quote already exists for this key. "
                             + "You can edit or remove the quote if you are the owner.").queue();
                 } else {
-                    User author = event.getMessage().getAuthor();
-                    table.insert().set("owner", author.getId())
-                                  .set("owner_name", author.getName())
-                                  .set("key", tokens.get(0))
-                                  .set("quote", tokens.get(1)).execute();
+                    Quote quoteToAdd = getQuoteDataFromMessage.get();
+
+                    addQuoteToGuildTable(event.getGuild(), quoteToAdd);
 
                     event.getChannel().sendMessage("Quote added to database.").queue();
                 }
@@ -102,19 +212,21 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+
             if (tokens.size() == 1) {
-                Table table = getQuoteTable(event.getGuild());
 
-                // First we check if the quote already exists.
-                ResultSet resultSet = table.select().where("key", "=", tokens.get(0)).execute();
+                Guild guild = event.getGuild();
 
-                if (resultSet.next()) {
-                    if (event.getAuthor().getId().equals(resultSet.getString("owner"))
-                            || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
+                ObjectResult<Quote> fetchingQuoteResult = tryFetchQuoteFromGuildTableByQuoteKey(guild, tokens.get(0));
 
-                        table.delete()
-                                .where("key", "=", tokens.get(0))
-                                .execute();
+                if (fetchingQuoteResult.getResult()) {
+
+                    Quote quoteToDelete = fetchingQuoteResult.getObject();
+
+                    // If user has permission to delete quotes
+                    if (hasAuthorityOverQuote(event.getMember(), quoteToDelete)) {
+
+                        deleteQuoteFromGuildTableByQuoteKey(guild, quoteToDelete.getKey());
 
                         event.getChannel().sendMessage("Quote deleted.").queue();
 
@@ -187,26 +299,41 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
 
-            Table table = getQuoteTable(event.getGuild());
-            ResultSet resultSet = table.select().execute();
+            ///region Local_Function
 
-            List<String> quotesToChooseFrom = new ArrayList<String>();
-
-            while (resultSet.next()){
-                String quote = resultSet.getString("quote");
-                quotesToChooseFrom.add(quote);
-            }
-
-            if (quotesToChooseFrom.size() > 0) {
+            Function<List<String>, String> pickQuoteFromQuotesList = (quotesList) -> {
                 Random rand = new Random();
 
-                int randIndex = rand.nextInt(quotesToChooseFrom.size());
-                String quoteToShow = quotesToChooseFrom.get(randIndex);
+                int randIndex = rand.nextInt(quotesList.size());
+                return quotesList.get(randIndex);
+            };
+            ///endregion
+
+
+            List<String> quotesToChooseFrom = fetchAllQuotesContentFromGuild(event.getGuild());
+
+            if (quotesToChooseFrom.size() > 0) {
+
+                String quoteToShow = pickQuoteFromQuotesList.apply(quotesToChooseFrom);
 
                 event.getChannel().sendMessage("\"" + quoteToShow + "\"").queue();
             } else {
                 event.getChannel().sendMessage("This server doesn't have any quotes.").queue();
             }
+        }
+
+        private List<String> fetchAllQuotesContentFromGuild(Guild guild) throws SQLException {
+            Table table = getQuoteTable(guild);
+            ResultSet resultSet = table.select().execute();
+
+            List<String> allQuotesContent = new ArrayList<String>();
+
+            while (resultSet.next()){
+                String quote = resultSet.getString("quote");
+                allQuotesContent.add(quote);
+            }
+
+            return allQuotesContent;
         }
 
         @Override
@@ -240,18 +367,18 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             if (tokens.size() == 1) {
-                Table table = getQuoteTable(event.getGuild());
-                ResultSet resultSet = table.select().where("key", "=",tokens.get(0))
-                        .execute();
 
-                if (resultSet.next()) {
-                    String message = "Quote:\n```\n" + resultSet.getString("quote") + "\n```\n";
+                ObjectResult<Quote> fetchQuoteResult = tryFetchQuoteFromGuildTableByQuoteKey(event.getGuild(), tokens.get(0));
 
-                    User owner = event.getJDA().getUserById(resultSet.getString("owner"));
+                if (fetchQuoteResult.getResult()) {
+                    Quote quoteInfoToShow = fetchQuoteResult.getObject();
+                    String message = "Quote:\n```\n" + quoteInfoToShow.getContent() + "\n```\n";
+
+                    User owner = event.getJDA().getUserById(quoteInfoToShow.getOwnerID());
                     if (owner == null) {
                         message += "Owner's account could not be found.\n"
                                  + "Name of the owner during creation of the quote: "
-                                 + resultSet.getString("owner_name") + "\n";
+                                 + quoteInfoToShow.getOwnerName() + "\n";
                     } else {
                         message += "Owner: " + owner.getName();
                     }
@@ -298,7 +425,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             if (tokens.size() == 2) {
                 // Exit if another quote with the name to replace to exists.
-                if (QuoteWithKeyExistsInGuild(event.getGuild(), tokens.get(1))){
+                if (quoteKeyExistsOnGuildTable(event.getGuild(), tokens.get(1))){
                     event.getChannel().sendMessage("A quote with the new key name given already exists!").queue();
                     return;
                 }
@@ -308,34 +435,18 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                 // First we check if the quote already exists.
                 ResultSet resultSet = table.select().where("key", "=",tokens.get(0)).execute();
 
+                ObjectResult<Quote> fetchQuoteResult = tryFetchQuoteFromGuildTableByQuoteKey(event.getGuild(), tokens.get(0));
+
                 if (resultSet.next()) {
 
-                    if (event.getAuthor().getId().equals(resultSet.getString("owner")) || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
-                        String messageToSend = "";
+                    Quote quoteToEdit = fetchQuoteResult.getObject();
 
-                        String quoteOwnerID;
-                        String quoteOwnerName;
+                    if (hasAuthorityOverQuote(event.getMember(), quoteToEdit)) {
+                        String messageToSend = Utils.STRING_EMPTY;
 
-                        User owner = event.getJDA().getUserById(resultSet.getString("owner"));
-                        if (owner == null) {
-                            quoteOwnerName = event.getAuthor().getName();
-                            quoteOwnerID = event.getAuthor().getId();
-                            messageToSend += "Owner's account could not be found.\n" + "Updated this quote owner to be " + quoteOwnerName;
-                        } else {
-                            quoteOwnerID = owner.getId();
-                            quoteOwnerName = owner.getName();
-                        }
+                        quoteToEdit.setKey(tokens.get(1));
 
-                        String quoteContent = resultSet.getString("quote");
-
-                        // Delete the current quote first.
-                        table.delete().where("key", "=", tokens.get(0)).execute();
-
-                        // Insert the current quote again, but with the new key.
-                        table.insert().set("owner", quoteOwnerID)
-                                .set("owner_name", quoteOwnerName)
-                                .set("key", tokens.get(1))
-                                .set("quote", quoteContent).execute();
+                        updateGuildTableWithQuoteByQuoteKey(event.getGuild(), quoteToEdit, tokens.get(0));
 
                         messageToSend += "\n\n Quote Name Updated to be " + tokens.get(1);
                         event.getChannel().sendMessage(messageToSend).queue();
@@ -347,9 +458,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                 } else {
                     event.getChannel().sendMessage("A quote for this key does not exist. "
                             + "You can make a new quote using the quote add command.").queue();
-
                 }
-
             } else {
                 event.getChannel().sendMessage(
                         "Wrong number of arguments. Command should be:\n$>quote rename \"key\" \"new quote name\"").queue();
@@ -389,21 +498,16 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             if (tokens.size() == 2) {
-                Table table = getQuoteTable(event.getGuild());
 
-                // First we check if the quote already exists.
-                ResultSet resultSet = table.select().where("key", "=",tokens.get(0))
-                        .execute();
+                ObjectResult<Quote> fetchedQuoteResult = tryFetchQuoteFromGuildTableByQuoteKey(event.getGuild(), tokens.get(0));
 
-                if (resultSet.next()) {
+                if (fetchedQuoteResult.getResult()) {
 
-                    if (event.getAuthor().getId().equals(resultSet.getString("owner"))
-                            || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
+                    Quote quoteToEdit = fetchedQuoteResult.getObject();
 
-                        table.update()
-                                .set("quote", tokens.get(1))
-                                .where("key","=", tokens.get(0))
-                                .execute();
+                    if (hasAuthorityOverQuote(event.getMember(), quoteToEdit)) {
+                        quoteToEdit.setContent(tokens.get(1));
+                        updateGuildTableWithQuoteByQuoteKey(event.getGuild(), quoteToEdit, tokens.get(0));
 
                         event.getChannel().sendMessage("Quote updated.").queue();
 
@@ -454,25 +558,20 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
             if (tokens.size() == 2) {
-                Table table = getQuoteTable(event.getGuild());
+                ObjectResult<Quote> fetchQuoteResult = tryFetchQuoteFromGuildTableByQuoteKey(event.getGuild(), tokens.get(0));
 
-                // First we check if the quote already exists.
-                ResultSet resultSet = table.select().where("key", "=",tokens.get(0))
-                        .execute();
+                if (fetchQuoteResult.getResult()) {
 
-                if (resultSet.next()) {
+                    Quote quoteToEdit = fetchQuoteResult.getObject();
 
-                    if (event.getAuthor().getId().equals(resultSet.getString("owner"))
-                            || authorityManagement.checkHasAuthority(event.getMember(), new QuoteAdmin())) {
+                    if (hasAuthorityOverQuote(event.getMember(), quoteToEdit)) {
 
                         Member newOwner = Utils.getMemberFromMessage(event, tokens.get(1));
-
                         if (newOwner != null) {
-                            table.update()
-                                    .set("owner", newOwner.getUser().getId())
-                                    .where("key", "=", tokens.get(0))
-                                    .execute();
 
+                            quoteToEdit.setOwnerID(newOwner.getUser().getId());
+                            quoteToEdit.setOwnerName(newOwner.getUser().getName());
+                            updateGuildTableWithQuoteByQuoteKey(event.getGuild(), quoteToEdit, tokens.get(0));
                             event.getChannel().sendMessage("Quote owner updated.").queue();
                         } else {
                             event.getChannel().sendMessage(
@@ -562,13 +661,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             Table table = getQuoteTable(channel.getGuild());
 
             if (!tokens.isEmpty()) {
-                ResultSet resultSet = table.select().where("key", "=", tokens.get(0))
-                        .execute();
+                ObjectResult<Quote> fetchQuoteResult = tryFetchQuoteFromGuildTableByQuoteKey(channel.getGuild(), tokens.get(0));
+                if (fetchQuoteResult.getResult()) {
+                    Quote quoteToSend = fetchQuoteResult.getObject();
 
-                if (resultSet.next()) {
-                    String quote = resultSet.getString("quote");
-
-                    channel.sendMessage("[" + Utils.cleanMessage(quote) + "]")
+                    channel.sendMessage("[" + Utils.cleanMessage(quoteToSend.getContent()) + "]")
                             .queue();
                 } else {
                     channel.sendMessage("Could not find a quote by that key.").queue();
@@ -639,6 +736,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         }
     }
 
+    private boolean hasAuthorityOverQuote(Member member, Quote quote) throws SQLException {
+        return member.getUser().getId().equals(quote.getOwnerID()) || authorityManagement.checkHasAuthority(member, new QuoteAdmin());
+    }
+
     private Table getQuoteTable(Guild guild) throws SQLException {
         Table table = persistence.getGuildTable(guild, this);
         Table quoteTable = new Table(table, "quotes");
@@ -687,19 +788,5 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
     @Override
     public Command[] getCommands(CarlBot carlbot) {
         return new Command[] { new QuoteCommand(carlbot) };
-    }
-
-    private boolean QuoteWithKeyExistsInGuild(Guild guild, String key) throws SQLException {
-        Table table = getQuoteTable(guild);
-        ResultSet resultSet = table.select().where("key", "=",key).execute();
-
-        boolean quoteExists = false;
-        if (resultSet.next()){
-            quoteExists = true;
-        }
-
-        resultSet.close();
-
-        return quoteExists;
     }
 }
