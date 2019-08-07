@@ -1,6 +1,7 @@
 package net.artifactgaming.carlbot.modules.authority;
 
 import net.artifactgaming.carlbot.*;
+import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.persistence.*;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
@@ -446,6 +447,37 @@ public class AuthorityManagement implements AuthorityRequiring, Module, Persiste
                 return false;
             }
         }
+    }
+
+    /**
+     * Determines if a user has a set of authorities. Note that role authority is included here.
+     * @param member The member we are checking the authority of.
+     * @param authorities The list of authority that the user or role needs to have.
+     * @param ignoreOwner if false, this will always return true for members who are the owner of the guild.
+     * @return true if they have the authority, directly or by a role; false if otherwise.
+     */
+    public boolean checkHasAuthorities(Member member, Authority[] authorities, boolean ignoreOwner) throws SQLException {
+        boolean hasAuthority = true;
+
+        for (Authority authority : authorities){
+            hasAuthority =  checkHasAuthority(member, authority, ignoreOwner);
+
+            if (!hasAuthority){
+                break;
+            }
+        }
+
+        return hasAuthority;
+    }
+
+    /**
+     * Determines if a user has a set of authorities. Note that role authority is included here.
+     * @param member The member we are checking the authority of.
+     * @param authorities The list of authority that the user or role needs to have.
+     * @return true if they have the authority, directly or by a role; false if otherwise.
+     */
+    public boolean checkHasAuthorities(Member member, Authority[] authorities) throws SQLException {
+        return checkHasAuthorities(member, authorities, false);
     }
 
     /**

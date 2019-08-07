@@ -5,10 +5,13 @@ import net.artifactgaming.carlbot.listeners.MessageReader;
 import net.artifactgaming.carlbot.modules.quotes.Quotes;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
+import net.artifactgaming.carlbot.modules.schedule.Schedules;
 import net.artifactgaming.carlbot.modules.selfdocumentation.SelfDocumentation;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.core.events.ReadyEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.slf4j.Logger;
@@ -24,10 +27,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class CarlBot extends ListenerAdapter implements Runnable {
 
@@ -47,8 +47,10 @@ public class CarlBot extends ListenerAdapter implements Runnable {
      */
     private Logger logger = LoggerFactory.getLogger(CarlBot.class);
 
-    private String callsign = "$>";
+    private String callsign = Utils.CALLSIGN;
     private List<String> ownerIDs = new ArrayList<>();
+
+    private static List<OnCarlBotReady> onCarlBotReadyList = new ArrayList<OnCarlBotReady>();
 
     public static void main(String[] args) throws Exception {
 
@@ -60,8 +62,14 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.addModule(new AuthorityManagement());
         bot.addModule(new Persistence());
         bot.addModule(new SelfDocumentation());
+        bot.addModule(new Schedules());
+
 
         bot.run();
+    }
+
+    public static void addOnCarlbotReadyListener(OnCarlBotReady onCarlBotReady){
+        onCarlBotReadyList.add(onCarlBotReady);
     }
 
     public void loadConfig(File file) throws IOException {
@@ -141,6 +149,13 @@ public class CarlBot extends ListenerAdapter implements Runnable {
             builder.buildAsync();
         } catch (LoginException e) {
             e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onReady(ReadyEvent event) {
+        for (OnCarlBotReady onCarlBotReady : onCarlBotReadyList){
+            onCarlBotReady.OnCarlBotReady(event);
         }
     }
 

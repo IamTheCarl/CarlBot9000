@@ -1,7 +1,8 @@
 package net.artifactgaming.carlbot;
 
+import net.artifactgaming.carlbot.modules.schedule.SchedulableCommand;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-import org.h2.jdbc.JdbcSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,33 @@ public class CommandHandler {
         }
 
         return callsign;
+    }
+
+    public void invokeCommandAsSchedulable(TextChannel channel, List<String> tokens) {
+        // Need to actually have a command
+        if (tokens.size() > 0){
+            String callsign = tokens.get(0);
+            Command command = commands.get(callsign);
+
+            if (command != null){
+                // NOTE: No need to check for authority, as the authority was checked when they schedule the command.
+
+                if (command instanceof SchedulableCommand){
+                    tokens.remove(callsign);
+                    ((SchedulableCommand) command).invokeCommandAsSchedulable(channel, tokens);
+                } else {
+                    // TODO: Better error message
+                    channel.sendMessage("ERROR: The command ` "+ callsign  +"` should not be able to be scheduled!").queue();
+                }
+            } else {
+                // TODO: Better error message
+                channel.sendMessage("ERROR: The scheduled command ` "+ callsign  +"` does not exists!").queue();
+            }
+
+        } else {
+            // TODO: Better error message
+            channel.sendMessage("ERROR: This schedule was a module.").queue();
+        }
     }
 
     public void runCommand(MessageReceivedEvent event, String rawContent, List<String> tokens) {
