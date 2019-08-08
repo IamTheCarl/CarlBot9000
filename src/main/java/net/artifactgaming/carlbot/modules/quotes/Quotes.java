@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot.modules.quotes;
 
+import com.sun.org.apache.xpath.internal.operations.Quo;
 import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.authority.Authority;
@@ -10,10 +11,7 @@ import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
 import net.artifactgaming.carlbot.modules.schedule.SchedulableCommand;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -59,10 +58,14 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
     private Logger logger = LoggerFactory.getLogger(Quotes.class);
 
+
+
     @Override
     public Authority[] getRequiredAuthority() {
         return new Authority[] { new QuoteAdmin(), new UseQuotes() };
     }
+
+    private QuoteListMessageReactionListener quoteListMessageReactionListener;
 
     /**
      * Use "updateGuildTableWithQuoteByQuoteKey" instead.
@@ -77,6 +80,23 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         }
 
         addQuoteToGuildTable(guild, quote);
+    }
+
+    private List<Quote> getAllQuotesFromGuild(Guild guild) throws SQLException {
+        Table table = getQuoteTable(guild);
+        ResultSet resultSet = table.select().execute();
+
+        ArrayList<Quote> result = new ArrayList<>();
+        while (resultSet.next()){
+             result.add(new Quote(
+                    resultSet.getString(OWNER_ID),
+                    resultSet.getString(OWNER_NAME),
+                    resultSet.getString(QUOTE_KEY),
+                    resultSet.getString(QUOTE_CONTENT)
+             ));
+        }
+
+        return result;
     }
 
     private void updateGuildTableWithQuoteByQuoteKey(Guild guild, Quote quote, String quoteKey) throws SQLException {
@@ -141,6 +161,58 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         resultSet.close();
 
         return quoteExists;
+    }
+
+    private class ListCommand implements Command, AuthorityRequiring, Documented {
+
+        @Override
+        public String getCallsign() {
+            return "list";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+
+            List<Quote> quotesList = getAllQuotesFromGuild(event.getGuild());
+
+            if (quotesList.size() != 0){
+                Message quoteMessage = event.getChannel().sendMessage(
+                        "Fetching quotes...").complete();
+
+                QuoteListMessage quoteListMessage = new QuoteListMessage(quotesList, quoteMessage.getId());
+
+                quoteListMessageReactionListener.addQuoteListMessageToListener(quoteListMessage);
+
+                quoteMessage.editMessage("```" + quoteListMessage.getCurrentPageAsReadableDiscordString() + "```").queueAfter(2, TimeUnit.SECONDS);
+
+
+                //quoteMessage.addReaction(QuoteListMessageReactionListener.NEXT_EMOTE_UNICODE).queue();
+                //quoteMessage.addReaction(QuoteListMessageReactionListener.PREVIOUS_EMOTE_UNICODE).queue();
+            } else {
+                event.getChannel().sendMessage(
+                        "There are no quotes in this guild!").queue();
+            }
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Lists all the quotes in this guild.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "list";
+        }
     }
 
     private class AddCommand implements Command, AuthorityRequiring, Documented {
@@ -689,6 +761,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             commands.addCommand(new RenameCommand());
             commands.addCommand(new GiveAwayCommand());
             commands.addCommand(new GetCommand());
+            commands.addCommand(new ListCommand());
         }
 
         @Override
@@ -768,6 +841,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             logger.error("Persistence module is not loaded.");
             carlbot.crash();
         }
+
+        quoteListMessageReactionListener = new QuoteListMessageReactionListener();
+
+        carlbot.addOnMessageReactionListener(quoteListMessageReactionListener);
     }
 
     @Override

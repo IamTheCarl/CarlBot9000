@@ -14,6 +14,8 @@ public class Utils {
 
     public final static String CALLSIGN = "$>";
 
+    public final static String NEWLINE = "\r\n";
+
     /**
      * Removes @everyone and @here pings from messages.
      * @param sender User who sent the message.

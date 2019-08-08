@@ -1,5 +1,7 @@
 package net.artifactgaming.carlbot.modules.quotes;
 
+import net.artifactgaming.carlbot.Utils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +21,7 @@ public class QuoteListMessage {
 
     private String messageID;
 
-    public QuoteListMessage(ArrayList<Quote> quotesList, String messageID) {
+    QuoteListMessage(List<Quote> quotesList, String messageID) {
 
         ///region Local_Function
 
@@ -28,13 +30,13 @@ public class QuoteListMessage {
             quotesListAsPages.add(new ArrayList<>());
 
             for (int temp = 0, currPageIndex = 0, i = 0; i < quotesList.size(); ++i, ++temp){
-                quotesListAsPages.get(currPageIndex).add(quotesList.get(i));
-
                 if (temp >= maxQuotesPerListCount){
                     temp = 0;
                     ++currPageIndex;
                     quotesListAsPages.add(new ArrayList<>());
                 }
+
+                quotesListAsPages.get(currPageIndex).add(quotesList.get(i));
             }
         };
 
@@ -45,22 +47,26 @@ public class QuoteListMessage {
         this.messageID = messageID;
     }
 
-    public String getMessageID() {
+    String getMessageID() {
         return messageID;
     }
 
-    public List<Quote> getCurrentPage(){
+    String getCurrentPageAsReadableDiscordString(){
+        return getQuotePageAsReadableDiscordString(quotesListAsPages.get(currentlyShownPageIndex));
+    }
+
+    List<Quote> getCurrentPage(){
         return quotesListAsPages.get(currentlyShownPageIndex);
     }
 
-    public List<Quote> getNextPage(){
+    List<Quote> getNextPage(){
         ++currentlyShownPageIndex;
         clampCurrentlyShownPageIndexToQuotePageSize();
 
         return quotesListAsPages.get(currentlyShownPageIndex);
     }
 
-    public List<Quote> getPreviousPage(){
+    List<Quote> getPreviousPage(){
         --currentlyShownPageIndex;
         clampCurrentlyShownPageIndexToQuotePageSize();
 
@@ -73,5 +79,21 @@ public class QuoteListMessage {
         } else if (currentlyShownPageIndex < 0){
             currentlyShownPageIndex = quotesListAsPages.size() - 1;
         }
+    }
+
+    static String getQuotePageAsReadableDiscordString(List<Quote> quotePage){
+        StringBuilder readableStr = new StringBuilder(Utils.STRING_EMPTY);
+
+        for (Quote quote : quotePage) {
+            // QuoteKey:: content of quote
+            // owner_id, aka Name of owner
+
+            // TODO: Formatting
+            readableStr.append(quote.getKey()).append(":: ").append(quote.getContent()).append(Utils.NEWLINE);
+            readableStr.append(quote.getOwnerID()).append(", aka ").append(quote.getOwnerName()).append(Utils.NEWLINE);
+            readableStr.append(Utils.NEWLINE);
+        }
+
+        return readableStr.toString();
     }
 }
