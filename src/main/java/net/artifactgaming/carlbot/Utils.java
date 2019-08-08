@@ -40,6 +40,11 @@ public class Utils {
         return message;
     }
 
+    public static String makeStringSQLFriendly(String stringVal){
+
+        return stringVal.replace("\"", "''''");
+    }
+
     /**
      * Gets a member object from the mention or name with discriminator tag.
      * @param event The event containing the full message.

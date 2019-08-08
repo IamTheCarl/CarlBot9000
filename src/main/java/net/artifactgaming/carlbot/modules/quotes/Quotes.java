@@ -87,7 +87,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                 .set(OWNER_NAME, quote.getOwnerName())
                 .set(QUOTE_KEY, quote.getKey())
                 .set(QUOTE_CONTENT, quote.getContent())
-                .where("key", "=", quoteKey)
+                .where(QUOTE_KEY, "=", quoteKey)
                 .execute();
     }
 
@@ -114,7 +114,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         Table table = getQuoteTable(guild);
 
         table.delete()
-                .where("key", "=", quoteKey)
+                .where(QUOTE_KEY, "=", quoteKey)
                 .execute();
     }
 
@@ -130,7 +130,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
     private boolean quoteKeyExistsOnGuildTable(Guild guild, String quoteKey) throws SQLException {
         Table table = getQuoteTable(guild);
 
-        ResultSet resultSet = table.select().where("key", "=", quoteKey).execute();
+        ResultSet resultSet = table.select().where(QUOTE_KEY, "=", quoteKey).execute();
 
         boolean quoteExists = false;
 
@@ -157,7 +157,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
             Supplier<Quote> getQuoteDataFromMessage = () -> {
                 User author = event.getMessage().getAuthor();
-                return new Quote(author.getId(), author.getName(), tokens.get(0), tokens.get(1));
+                return new Quote(author.getId(), author.getName(), tokens.get(0), Utils.makeStringSQLFriendly(tokens.get(1)));
             };
 
             ///endregion
@@ -430,14 +430,9 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                     return;
                 }
 
-                Table table = getQuoteTable(event.getGuild());
-
-                // First we check if the quote already exists.
-                ResultSet resultSet = table.select().where("key", "=",tokens.get(0)).execute();
-
                 ObjectResult<Quote> fetchQuoteResult = tryFetchQuoteFromGuildTableByQuoteKey(event.getGuild(), tokens.get(0));
 
-                if (resultSet.next()) {
+                if (fetchQuoteResult.getResult()) {
 
                     Quote quoteToEdit = fetchQuoteResult.getObject();
 
