@@ -1,6 +1,6 @@
 package net.artifactgaming.carlbot.modules.quotes;
 
-import com.sun.org.apache.xpath.internal.operations.Quo;
+
 import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.authority.Authority;
@@ -183,11 +183,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
                 quoteListMessageReactionListener.addQuoteListMessageToListener(quoteListMessage);
 
-                quoteMessage.editMessage("```" + quoteListMessage.getCurrentPageAsReadableDiscordString() + "```").queueAfter(2, TimeUnit.SECONDS);
+                quoteMessage.editMessage("```" + quoteListMessage.getCurrentPageAsReadableDiscordString() + "```").queueAfter(500, TimeUnit.MILLISECONDS);
 
-
-                //quoteMessage.addReaction(QuoteListMessageReactionListener.NEXT_EMOTE_UNICODE).queue();
-                //quoteMessage.addReaction(QuoteListMessageReactionListener.PREVIOUS_EMOTE_UNICODE).queue();
+                quoteMessage.addReaction( QuoteListMessageReactionListener.PREVIOUS_EMOTE_NAME).completeAfter(500, TimeUnit.MILLISECONDS);
+                quoteMessage.addReaction( QuoteListMessageReactionListener.NEXT_EMOTE_NAME).queueAfter(500, TimeUnit.MILLISECONDS);
             } else {
                 event.getChannel().sendMessage(
                         "There are no quotes in this guild!").queue();

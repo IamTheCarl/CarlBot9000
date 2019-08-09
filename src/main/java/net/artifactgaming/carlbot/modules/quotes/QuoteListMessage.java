@@ -89,8 +89,8 @@ public class QuoteListMessage {
             // owner_id, aka Name of owner
 
             // TODO: Formatting
-            readableStr.append(quote.getKey()).append(":: ").append(quote.getContent()).append(Utils.NEWLINE);
-            readableStr.append(quote.getOwnerID()).append(", aka ").append(quote.getOwnerName()).append(Utils.NEWLINE);
+            readableStr.append("KEY: "+ quote.getKey()).append(", CONTENT: ").append(quote.getContent()).append(Utils.NEWLINE);
+            readableStr.append("OWNER_ID: "+ quote.getOwnerID()).append(", OWNER_NAME: ").append(quote.getOwnerName()).append(Utils.NEWLINE);
             readableStr.append(Utils.NEWLINE);
         }
 

@@ -1,6 +1,7 @@
 package net.artifactgaming.carlbot.modules.quotes;
 
 import net.artifactgaming.carlbot.ObjectResult;
+import net.artifactgaming.carlbot.Utils;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.entities.Message;
@@ -17,10 +18,8 @@ import java.util.ArrayList;
  */
 public class QuoteListMessageReactionListener implements OnMessageReaction {
 
-    private static final String NEXT_EMOTE_NAME = "➡";
-    public static final String NEXT_EMOTE_UNICODE = "U+27A1";
-    private static final String PREVIOUS_EMOTE_NAME = "⬅";
-    public static final String PREVIOUS_EMOTE_UNICODE = "U+2B05";
+    static final String NEXT_EMOTE_NAME = "➡";
+    static final String PREVIOUS_EMOTE_NAME = "⬅";
 
     private enum ReactionType {
         NEXT,
@@ -66,6 +65,7 @@ public class QuoteListMessageReactionListener implements OnMessageReaction {
                 messageToEdit.editMessage("```" + targetQuoteMessage.getCurrentPageAsReadableDiscordString() + "```").queue();
             } else if (reactionType == ReactionType.PREVIOUS){
                 targetQuoteMessage.getPreviousPage();
+
                 Message messageToEdit = event.getChannel().getMessageById(event.getMessageId()).complete();
                 messageToEdit.editMessage("```" + targetQuoteMessage.getCurrentPageAsReadableDiscordString() + "```").queue();
             }
@@ -106,10 +106,11 @@ public class QuoteListMessageReactionListener implements OnMessageReaction {
             QuoteListMessage targetQuoteMessage = resultOfFetchingQuoteListMessage.getObject();
 
             Message messageToEdit = event.getChannel().getMessageById(event.getMessageId()).complete();
-            messageToEdit.addReaction(NEXT_EMOTE_UNICODE).queue();
-            messageToEdit.addReaction(PREVIOUS_EMOTE_UNICODE).queue();
+            messageToEdit.addReaction(NEXT_EMOTE_NAME);
+            messageToEdit.addReaction(PREVIOUS_EMOTE_NAME);
         }
     }
+
 
     public void addQuoteListMessageToListener(QuoteListMessage quoteListMessage){
         quoteListMessages.add(quoteListMessage);
