@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot.modules.quotes;
 
+
 import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.authority.Authority;
@@ -10,10 +11,7 @@ import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
 import net.artifactgaming.carlbot.modules.schedule.SchedulableCommand;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -59,10 +58,14 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
     private Logger logger = LoggerFactory.getLogger(Quotes.class);
 
+
+
     @Override
     public Authority[] getRequiredAuthority() {
         return new Authority[] { new QuoteAdmin(), new UseQuotes() };
     }
+
+    private QuoteListMessageReactionListener quoteListMessageReactionListener;
 
     /**
      * Use "updateGuildTableWithQuoteByQuoteKey" instead.
@@ -79,6 +82,23 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         addQuoteToGuildTable(guild, quote);
     }
 
+    private List<Quote> getAllQuotesFromGuild(Guild guild) throws SQLException {
+        Table table = getQuoteTable(guild);
+        ResultSet resultSet = table.select().execute();
+
+        ArrayList<Quote> result = new ArrayList<>();
+        while (resultSet.next()){
+             result.add(new Quote(
+                    resultSet.getString(OWNER_ID),
+                    resultSet.getString(OWNER_NAME),
+                    resultSet.getString(QUOTE_KEY),
+                    resultSet.getString(QUOTE_CONTENT)
+             ));
+        }
+
+        return result;
+    }
+
     private void updateGuildTableWithQuoteByQuoteKey(Guild guild, Quote quote, String quoteKey) throws SQLException {
         Table table = getQuoteTable(guild);
 
@@ -87,7 +107,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                 .set(OWNER_NAME, quote.getOwnerName())
                 .set(QUOTE_KEY, quote.getKey())
                 .set(QUOTE_CONTENT, quote.getContent())
-                .where("key", "=", quoteKey)
+                .where(QUOTE_KEY, "=", quoteKey)
                 .execute();
     }
 
@@ -114,7 +134,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         Table table = getQuoteTable(guild);
 
         table.delete()
-                .where("key", "=", quoteKey)
+                .where(QUOTE_KEY, "=", quoteKey)
                 .execute();
     }
 
@@ -130,7 +150,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
     private boolean quoteKeyExistsOnGuildTable(Guild guild, String quoteKey) throws SQLException {
         Table table = getQuoteTable(guild);
 
-        ResultSet resultSet = table.select().where("key", "=", quoteKey).execute();
+        ResultSet resultSet = table.select().where(QUOTE_KEY, "=", quoteKey).execute();
 
         boolean quoteExists = false;
 
@@ -141,6 +161,57 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         resultSet.close();
 
         return quoteExists;
+    }
+
+    private class ListCommand implements Command, AuthorityRequiring, Documented {
+
+        @Override
+        public String getCallsign() {
+            return "list";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+
+            List<Quote> quotesList = getAllQuotesFromGuild(event.getGuild());
+
+            if (quotesList.size() != 0){
+                Message quoteMessage = event.getChannel().sendMessage(
+                        "Fetching quotes...").complete();
+
+                QuoteListMessage quoteListMessage = new QuoteListMessage(quotesList, quoteMessage.getId(), quoteListMessageReactionListener);
+
+                quoteListMessageReactionListener.addQuoteListMessageToListener(quoteListMessage);
+
+                quoteMessage.editMessage("```" + quoteListMessage.getCurrentPageAsReadableDiscordString() + "```").queueAfter(200, TimeUnit.MILLISECONDS);
+
+                quoteMessage.addReaction( QuoteListMessageReactionListener.PREVIOUS_EMOTE_NAME).completeAfter(500, TimeUnit.MILLISECONDS);
+                quoteMessage.addReaction( QuoteListMessageReactionListener.NEXT_EMOTE_NAME).queueAfter(500, TimeUnit.MILLISECONDS);
+            } else {
+                event.getChannel().sendMessage(
+                        "There are no quotes in this guild!").queue();
+            }
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Lists all the quotes in this guild.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "list";
+        }
     }
 
     private class AddCommand implements Command, AuthorityRequiring, Documented {
@@ -157,7 +228,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
             Supplier<Quote> getQuoteDataFromMessage = () -> {
                 User author = event.getMessage().getAuthor();
-                return new Quote(author.getId(), author.getName(), tokens.get(0), tokens.get(1));
+                return new Quote(author.getId(), author.getName(), tokens.get(0), Utils.makeStringSQLFriendly(tokens.get(1)));
             };
 
             ///endregion
@@ -329,7 +400,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             List<String> allQuotesContent = new ArrayList<String>();
 
             while (resultSet.next()){
-                String quote = resultSet.getString("quote");
+                String quote = resultSet.getString(QUOTE_CONTENT);
                 allQuotesContent.add(quote);
             }
 
@@ -374,16 +445,24 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                     Quote quoteInfoToShow = fetchQuoteResult.getObject();
                     String message = "Quote:\n```\n" + quoteInfoToShow.getContent() + "\n```\n";
 
+                    boolean quoteUpdated = false;
+
                     User owner = event.getJDA().getUserById(quoteInfoToShow.getOwnerID());
                     if (owner == null) {
                         message += "Owner's account could not be found.\n"
                                  + "Name of the owner during creation of the quote: "
                                  + quoteInfoToShow.getOwnerName() + "\n";
+                    } else if (!owner.getName().equals(quoteInfoToShow.getOwnerName())){
+                        quoteUpdated = true;
+                        quoteInfoToShow.setOwnerName(owner.getName());
+                        message += "Owner: " + owner.getName();
                     } else {
                         message += "Owner: " + owner.getName();
                     }
 
                     event.getChannel().sendMessage(message).queue();
+
+                    updateGuildTableWithQuoteByQuoteKey(event.getGuild(), quoteInfoToShow, quoteInfoToShow.getKey());
                 } else {
                     event.getChannel().sendMessage("Could not find a quote by that key.").queue();
                 }
@@ -430,14 +509,9 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                     return;
                 }
 
-                Table table = getQuoteTable(event.getGuild());
-
-                // First we check if the quote already exists.
-                ResultSet resultSet = table.select().where("key", "=",tokens.get(0)).execute();
-
                 ObjectResult<Quote> fetchQuoteResult = tryFetchQuoteFromGuildTableByQuoteKey(event.getGuild(), tokens.get(0));
 
-                if (resultSet.next()) {
+                if (fetchQuoteResult.getResult()) {
 
                     Quote quoteToEdit = fetchQuoteResult.getObject();
 
@@ -694,6 +768,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             commands.addCommand(new RenameCommand());
             commands.addCommand(new GiveAwayCommand());
             commands.addCommand(new GetCommand());
+            commands.addCommand(new ListCommand());
         }
 
         @Override
@@ -773,6 +848,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             logger.error("Persistence module is not loaded.");
             carlbot.crash();
         }
+
+        quoteListMessageReactionListener = new QuoteListMessageReactionListener();
+
+        carlbot.addOnMessageReactionListener(quoteListMessageReactionListener);
     }
 
     @Override

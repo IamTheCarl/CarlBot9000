@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot;
 
+import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.listeners.MessageReader;
 import net.artifactgaming.carlbot.modules.quotes.Quotes;
@@ -9,10 +10,13 @@ import net.artifactgaming.carlbot.modules.schedule.Schedules;
 import net.artifactgaming.carlbot.modules.selfdocumentation.SelfDocumentation;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
-import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.ReadyEvent;
+import net.dv8tion.jda.core.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveAllEvent;
+import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +40,13 @@ public class CarlBot extends ListenerAdapter implements Runnable {
     private HashMap<Class, Module> moduleLookup = new HashMap<>();
 
     private ArrayList<MessageReader> messageReaders = new ArrayList<>();
+    private ArrayList<OnMessageReaction> onMessageReactionListeners = new ArrayList<>();
+
     ArrayList<CommandPermissionChecker> permissionCheckers = new ArrayList<>();
 
     private CommandHandler commands = new CommandHandler(this);
+
+
 
     /*
      * A reminder to myself because I have goldfish memory:
@@ -64,12 +72,15 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.addModule(new SelfDocumentation());
         bot.addModule(new Schedules());
 
-
         bot.run();
     }
 
     public static void addOnCarlbotReadyListener(OnCarlBotReady onCarlBotReady){
         onCarlBotReadyList.add(onCarlBotReady);
+    }
+
+    public void addOnMessageReactionListener(OnMessageReaction onMessageReaction){
+        onMessageReactionListeners.add(onMessageReaction);
     }
 
     public void loadConfig(File file) throws IOException {
@@ -175,6 +186,34 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
                 commands.runCommand(event, rawContent, tokens);
             }
+        }
+    }
+
+    @Override
+    public void onMessageDelete(MessageDeleteEvent event) {
+        for (OnMessageReaction onMessageReactionListener: onMessageReactionListeners){
+            onMessageReactionListener.onMessageDelete(event);
+        }
+    }
+
+    @Override
+    public void onMessageReactionAdd(MessageReactionAddEvent event) {
+        for (OnMessageReaction onMessageReactionListener: onMessageReactionListeners){
+            onMessageReactionListener.onMessageReactionAdd(event);
+        }
+    }
+
+    @Override
+    public void onMessageReactionRemove(MessageReactionRemoveEvent event) {
+        for (OnMessageReaction onMessageReactionListener: onMessageReactionListeners){
+            onMessageReactionListener.onMessageReactionRemove(event);
+        }
+    }
+
+    @Override
+    public void onMessageReactionRemoveAll(MessageReactionRemoveAllEvent event) {
+        for (OnMessageReaction onMessageReactionListener: onMessageReactionListeners){
+            onMessageReactionListener.onMessageReactionRemoveAll(event);
         }
     }
 
