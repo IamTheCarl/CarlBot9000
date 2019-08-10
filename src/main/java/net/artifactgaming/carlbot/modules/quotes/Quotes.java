@@ -183,7 +183,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
                 quoteListMessageReactionListener.addQuoteListMessageToListener(quoteListMessage);
 
-                quoteMessage.editMessage("```" + quoteListMessage.getCurrentPageAsReadableDiscordString() + "```").queueAfter(500, TimeUnit.MILLISECONDS);
+                quoteMessage.editMessage("```" + quoteListMessage.getCurrentPageAsReadableDiscordString() + "```").queueAfter(200, TimeUnit.MILLISECONDS);
 
                 quoteMessage.addReaction( QuoteListMessageReactionListener.PREVIOUS_EMOTE_NAME).completeAfter(500, TimeUnit.MILLISECONDS);
                 quoteMessage.addReaction( QuoteListMessageReactionListener.NEXT_EMOTE_NAME).queueAfter(500, TimeUnit.MILLISECONDS);
@@ -400,7 +400,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             List<String> allQuotesContent = new ArrayList<String>();
 
             while (resultSet.next()){
-                String quote = resultSet.getString("quote");
+                String quote = resultSet.getString(QUOTE_CONTENT);
                 allQuotesContent.add(quote);
             }
 
@@ -445,16 +445,24 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                     Quote quoteInfoToShow = fetchQuoteResult.getObject();
                     String message = "Quote:\n```\n" + quoteInfoToShow.getContent() + "\n```\n";
 
+                    boolean quoteUpdated = false;
+
                     User owner = event.getJDA().getUserById(quoteInfoToShow.getOwnerID());
                     if (owner == null) {
                         message += "Owner's account could not be found.\n"
                                  + "Name of the owner during creation of the quote: "
                                  + quoteInfoToShow.getOwnerName() + "\n";
+                    } else if (!owner.getName().equals(quoteInfoToShow.getOwnerName())){
+                        quoteUpdated = true;
+                        quoteInfoToShow.setOwnerName(owner.getName());
+                        message += "Owner: " + owner.getName();
                     } else {
                         message += "Owner: " + owner.getName();
                     }
 
                     event.getChannel().sendMessage(message).queue();
+
+                    updateGuildTableWithQuoteByQuoteKey(event.getGuild(), quoteInfoToShow, quoteInfoToShow.getKey());
                 } else {
                     event.getChannel().sendMessage("Could not find a quote by that key.").queue();
                 }
