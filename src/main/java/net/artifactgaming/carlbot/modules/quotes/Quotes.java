@@ -179,7 +179,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                 Message quoteMessage = event.getChannel().sendMessage(
                         "Fetching quotes...").complete();
 
-                QuoteListMessage quoteListMessage = new QuoteListMessage(quotesList, quoteMessage.getId());
+                QuoteListMessage quoteListMessage = new QuoteListMessage(quotesList, quoteMessage.getId(), quoteListMessageReactionListener);
 
                 quoteListMessageReactionListener.addQuoteListMessageToListener(quoteListMessage);
 

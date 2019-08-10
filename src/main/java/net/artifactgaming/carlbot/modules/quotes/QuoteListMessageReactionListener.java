@@ -3,6 +3,8 @@ package net.artifactgaming.carlbot.modules.quotes;
 import net.artifactgaming.carlbot.ObjectResult;
 import net.artifactgaming.carlbot.Utils;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
+import net.dv8tion.jda.bot.JDABot;
+import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageReaction;
@@ -24,7 +26,6 @@ public class QuoteListMessageReactionListener implements OnMessageReaction {
     private enum ReactionType {
         NEXT,
         PREVIOUS,
-        STOP,
         NULL
     }
 
@@ -34,6 +35,10 @@ public class QuoteListMessageReactionListener implements OnMessageReaction {
         quoteListMessages = new ArrayList<>();
     }
 
+    void handleMessageLeftIdle(QuoteListMessage idledMessage){
+        quoteListMessages.remove(idledMessage);
+    }
+
     @Override
     public void onMessageDelete(MessageDeleteEvent event) {
         ObjectResult<QuoteListMessage> resultOfFetchingQuoteListMessage = tryGetQuoteListMessageByMessageID(event.getMessageId());
@@ -41,6 +46,7 @@ public class QuoteListMessageReactionListener implements OnMessageReaction {
         if (resultOfFetchingQuoteListMessage.getResult()){
             // Message has been deleted, remove from list of quoteListMessages to manage.
             quoteListMessages.remove(resultOfFetchingQuoteListMessage.getObject());
+            resultOfFetchingQuoteListMessage.getObject().cancelAndPurgeIdleTimer();
         }
     }
 

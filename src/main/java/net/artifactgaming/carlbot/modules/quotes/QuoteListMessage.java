@@ -4,6 +4,8 @@ import net.artifactgaming.carlbot.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Represents a discord message sent by CarlBot in order to display the list of quotes.
@@ -15,13 +17,28 @@ public class QuoteListMessage {
      */
     private static final int maxQuotesPerListCount = 5;
 
+    /**
+     * How many seconds spent idling before this message stops reacting to reactions.
+     */
+    private static final int secondsToWaitToIdle = 30;
+
+    /**
+     * The object that is handling this message.
+     */
+    private QuoteListMessageReactionListener thisHandler;
+
     private ArrayList<ArrayList<Quote>> quotesListAsPages;
 
     private int currentlyShownPageIndex;
 
     private String messageID;
 
-    QuoteListMessage(List<Quote> quotesList, String messageID) {
+    /**
+     * Used to callback to stop handling reactions when the timer is up.
+     */
+    private Timer idleTimer;
+
+    QuoteListMessage(List<Quote> quotesList, String messageID, QuoteListMessageReactionListener thisHandler) {
 
         ///region Local_Function
 
@@ -45,6 +62,23 @@ public class QuoteListMessage {
         createQuotePagesFromQuoteLists.run();
         currentlyShownPageIndex = 0;
         this.messageID = messageID;
+
+        this.thisHandler = thisHandler;
+
+        setupInactiveTimer();
+    }
+
+    private void setupInactiveTimer(){
+        idleTimer = new Timer();
+
+        long delayAndPeriod = secondsToWaitToIdle * 1000;
+
+        idleTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                thisHandler.handleMessageLeftIdle(QuoteListMessage.this);
+            }
+        }, delayAndPeriod);
     }
 
     String getMessageID() {
@@ -63,6 +97,8 @@ public class QuoteListMessage {
         ++currentlyShownPageIndex;
         clampCurrentlyShownPageIndexToQuotePageSize();
 
+        resetIdleTimer();
+
         return quotesListAsPages.get(currentlyShownPageIndex);
     }
 
@@ -70,7 +106,19 @@ public class QuoteListMessage {
         --currentlyShownPageIndex;
         clampCurrentlyShownPageIndexToQuotePageSize();
 
+        resetIdleTimer();
+
         return quotesListAsPages.get(currentlyShownPageIndex);
+    }
+
+    void cancelAndPurgeIdleTimer(){
+        idleTimer.cancel();
+        idleTimer.purge();
+    }
+
+    private void resetIdleTimer(){
+        cancelAndPurgeIdleTimer();
+        setupInactiveTimer();
     }
 
     private void clampCurrentlyShownPageIndexToQuotePageSize(){
@@ -85,9 +133,6 @@ public class QuoteListMessage {
         StringBuilder readableStr = new StringBuilder(Utils.STRING_EMPTY);
 
         for (Quote quote : quotePage) {
-            // QuoteKey:: content of quote
-            // owner_id, aka Name of owner
-
             // TODO: Formatting
             readableStr.append("KEY: "+ quote.getKey()).append(", CONTENT: ").append(quote.getContent()).append(Utils.NEWLINE);
             readableStr.append("OWNER_ID: "+ quote.getOwnerID()).append(", OWNER_NAME: ").append(quote.getOwnerName()).append(Utils.NEWLINE);
