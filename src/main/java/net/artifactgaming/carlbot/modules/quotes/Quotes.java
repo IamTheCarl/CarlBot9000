@@ -16,6 +16,9 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -27,6 +30,11 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import net.sf.json.*;
+
+import java.io.File;
+import java.io.IOException;
 
 public class Quotes implements Module, AuthorityRequiring, PersistentModule, Documented {
 
@@ -163,7 +171,70 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         return quoteExists;
     }
 
-    private class ListCommand implements Command, AuthorityRequiring, Documented {
+    private class ExportCommand implements Command, AuthorityRequiring, Documented {
+        @Override
+        public String getCallsign() {
+            return "export";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+
+            List<Quote> quotesList = getAllQuotesFromGuild(event.getGuild());
+
+            if (quotesList.size() != 0){
+                Message exportingQuoteMessage = event.getChannel().sendMessage("Exporting quotes, please wait...").complete();
+
+                JSONArray quoteListAsJSON = new JSONArray();
+
+                for (Quote quote : quotesList){
+                    quoteListAsJSON.add(quote.toJsonObject());
+                }
+
+                String jsonFilePathName = "./" + event.getGuild().getId() + "_quotes.json";
+
+                File exportedJsonFile = new File(jsonFilePathName);
+
+                if (exportedJsonFile.createNewFile()){
+
+                    Files.write(Paths.get(jsonFilePathName), quoteListAsJSON.toString().getBytes());
+
+                    event.getChannel().sendFile(exportedJsonFile).queue();
+                    exportingQuoteMessage.delete().queue();
+
+                    exportedJsonFile.delete();
+                } else {
+                    exportingQuoteMessage.editMessage("ERROR: Already exporting quote!").queue();
+                }
+            } else {
+                event.getChannel().sendMessage(
+                        "There are no quotes in this guild!").queue();
+            }
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Export all the quotes in this guild as a JSON file.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "export";
+        }
+
+    }
+
+    private class ListCommand implements Command, Documented {
 
         @Override
         public String getCallsign() {
@@ -191,11 +262,6 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                 event.getChannel().sendMessage(
                         "There are no quotes in this guild!").queue();
             }
-        }
-
-        @Override
-        public Authority[] getRequiredAuthority() {
-            return new Authority[] { new UseQuotes() };
         }
 
         @Override
@@ -769,6 +835,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             commands.addCommand(new GiveAwayCommand());
             commands.addCommand(new GetCommand());
             commands.addCommand(new ListCommand());
+
+            commands.addCommand(new ExportCommand());
         }
 
         @Override
