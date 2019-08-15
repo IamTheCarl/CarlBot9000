@@ -16,15 +16,13 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -32,9 +30,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import net.sf.json.*;
-
-import java.io.File;
-import java.io.IOException;
 
 public class Quotes implements Module, AuthorityRequiring, PersistentModule, Documented {
 
@@ -107,6 +102,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         return result;
     }
 
+
     private void updateGuildTableWithQuoteByQuoteKey(Guild guild, Quote quote, String quoteKey) throws SQLException {
         Table table = getQuoteTable(guild);
 
@@ -169,6 +165,122 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         resultSet.close();
 
         return quoteExists;
+    }
+
+    private class ImportCommand implements Command, AuthorityRequiring, Documented {
+        @Override
+        public String getCallsign() {
+            return "import";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            ///region Local_Function
+
+            BooleanSupplier messageFirstAttachmentIsJSON = () -> {
+                Message.Attachment firstAttachment = event.getMessage().getAttachments().get(0);
+
+                return firstAttachment.getUrl().endsWith(".json");
+            };
+
+            BooleanSupplier messageHasNoJsonAttachment = () -> {
+                if (event.getMessage().getAttachments().size() == 0){
+                    return true;
+                } else return !messageFirstAttachmentIsJSON.getAsBoolean();
+            };
+
+            ///endregion
+
+            if (messageHasNoJsonAttachment.getAsBoolean()){
+                event.getChannel().sendMessage("Please send a JSON file full of quotes to import into this guild.").queue();
+                return;
+            }
+
+            Message importingMessage = event.getChannel().sendMessage("Importing quotes...").complete();
+
+            ObjectResult<List<Quote>> getQuotesObjectResult = tryGetQuotesFromAttachment(event.getMessage().getAttachments().get(0));
+
+            if (getQuotesObjectResult.getResult()){
+                List<Quote> quotes = getQuotesObjectResult.getObject();
+
+                // TODO: Allow the user to give an input to override all the quotes.
+                addQuotesToGuild(event.getGuild(),quotes, false);
+
+                importingMessage.editMessage("Imported " + quotes.size() + " quotes!").queue();
+            } else {
+                importingMessage.editMessage(getQuotesObjectResult.getResultMessage()).queue();
+            }
+        }
+
+        private void addQuotesToGuild(Guild guild, List<Quote> quotes, boolean overrideQuote) throws SQLException {
+            for (Quote quote : quotes){
+                boolean quoteWithKeyExists = quoteKeyExistsOnGuildTable(guild, quote.getKey());
+
+                if (!quoteWithKeyExists) {
+                    addQuoteToGuildTable(guild, quote);
+                } else if (overrideQuote){
+                    updateGuildTableWithQuoteByQuoteKey(guild, quote, quote.getKey());
+                }
+            }
+        }
+
+        private ObjectResult<List<Quote>> tryGetQuotesFromAttachment(Message.Attachment attachment) throws Exception {
+
+            InputStream jsonAsInputString =  attachment.getInputStream();
+
+            BufferedReader streamReader = new BufferedReader(new InputStreamReader(jsonAsInputString, "UTF-8"));
+
+            JSONArray quoteJsonArray;
+            try {
+                String inputStr;
+                StringBuilder responseStrBuilder = new StringBuilder();
+
+                while ((inputStr = streamReader.readLine()) != null) {
+                    responseStrBuilder.append(inputStr);
+                }
+
+                quoteJsonArray = JSONArray.fromObject(responseStrBuilder.toString());
+            } catch (Exception e) {
+                return new ObjectResult<List<Quote>>(null, "File is not JSON formatted.");
+            } finally {
+                streamReader.close();
+            }
+
+            return new ObjectResult<List<Quote>>(jsonArrayToQuotesList(quoteJsonArray));
+        }
+
+        private List<Quote> jsonArrayToQuotesList(JSONArray jsonArray){
+            ArrayList<Quote> quotes = new ArrayList<Quote>();
+
+            for(Object o: jsonArray){
+                if ( o instanceof JSONObject ) {
+                    quotes.add(Quote.toQuoteObject((JSONObject) o));
+                }
+            }
+
+            return quotes;
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseQuotes() };
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "import all the quotes into this guild from a JSON file.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "import";
+        }
+
     }
 
     private class ExportCommand implements Command, AuthorityRequiring, Documented {
@@ -402,17 +514,21 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         }
     }
 
-    private class DeleteAllCommand implements Command, AuthorityRequiring {
+    private class DeleteAllCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
-            return "remove_all";
+            return "deleteAll";
         }
 
         @Override
-        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
-            // TODO: Quote deletion command (Implement Documented afterwards)
-            event.getChannel().sendMessage("Remove all command issued, but its not yet supported.").queue();
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            // TODO: Actual quote deletion command (Implement Documented afterwards)
+            Table table = getQuoteTable(event.getGuild());
+
+            table.delete().execute();
+
+            event.getChannel().sendMessage("All quotes deleted!").queue();
         }
 
         @Override
@@ -423,6 +539,16 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         @Override
         public Module getParentModule() {
             return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Deletes all quotes from this server. (WARN: This action is irreversible and mostly for test purposes!)";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "deleteAll";
         }
     }
 
@@ -837,6 +963,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
             commands.addCommand(new ListCommand());
 
             commands.addCommand(new ExportCommand());
+            commands.addCommand(new ImportCommand());
         }
 
         @Override
