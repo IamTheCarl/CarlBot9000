@@ -12,6 +12,7 @@ import net.dv8tion.jda.core.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveAllEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveEvent;
+import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 
 import java.util.ArrayList;
 
@@ -20,8 +21,9 @@ import java.util.ArrayList;
  */
 public class QuoteListMessageReactionListener implements OnMessageReaction {
 
-    static final String NEXT_EMOTE_NAME = "➡";
-    static final String PREVIOUS_EMOTE_NAME = "⬅";
+    static final String NEXT_EMOTE_NAME = String.valueOf((char) 10145); // '➡' 10145
+    static final String PREVIOUS_EMOTE_NAME = String.valueOf((char) 11013); // '⬅' 11013
+
 
     private enum ReactionType {
         NEXT,
@@ -53,8 +55,25 @@ public class QuoteListMessageReactionListener implements OnMessageReaction {
     @Override
     public void onMessageReactionAdd(MessageReactionAddEvent event) {
 
+        ///region Local_Function
+
+        java.util.function.Supplier<ReactionType> getReactionTypeFromReactionEvent = () -> {
+            return getReactionTypeFromEmoteName(event.getReaction().getReactionEmote().getName());
+        };
+
+        java.util.function.BooleanSupplier eventUserIsBot = () -> {
+            return event.getUser().isBot();
+        };
+
+        java.util.function.Consumer<String> editEventMessageWithContent = (String content) -> {
+            Message messageToEdit = event.getChannel().getMessageById(event.getMessageId()).complete();
+            messageToEdit.editMessage(content).queue();
+        };
+
+        ///endregion
+
         // Ignore bots
-        if (event.getUser().isBot()){
+        if (eventUserIsBot.getAsBoolean()){
             return;
         }
 
@@ -63,45 +82,26 @@ public class QuoteListMessageReactionListener implements OnMessageReaction {
         if (resultOfFetchingQuoteListMessage.getResult()){
             QuoteListMessage targetQuoteMessage = resultOfFetchingQuoteListMessage.getObject();
 
-            ReactionType reactionType = getReactionTypeFromEmoteName(event.getReaction().getReactionEmote().getName());
+            ReactionType reactionType = getReactionTypeFromReactionEvent.get();
 
             if (reactionType == ReactionType.NEXT){
                 targetQuoteMessage.getNextPage();
-                Message messageToEdit = event.getChannel().getMessageById(event.getMessageId()).complete();
-                messageToEdit.editMessage("```" + targetQuoteMessage.getCurrentPageAsReadableDiscordString() + "```").queue();
             } else if (reactionType == ReactionType.PREVIOUS){
                 targetQuoteMessage.getPreviousPage();
+            }
 
-                Message messageToEdit = event.getChannel().getMessageById(event.getMessageId()).complete();
-                messageToEdit.editMessage("```" + targetQuoteMessage.getCurrentPageAsReadableDiscordString() + "```").queue();
+            editEventMessageWithContent.accept("```" + targetQuoteMessage.getCurrentPageAsReadableDiscordString() + "```");
+
+            try {
+                event.getReaction().removeReaction(event.getUser()).queue();
+            } catch (InsufficientPermissionException e){
+                event.getChannel().sendMessage("ERROR: I do not have enough permission to remove emotes from others!").queue();
             }
         }
     }
 
     @Override
     public void onMessageReactionRemove(MessageReactionRemoveEvent event) {
-        // Ignore bots
-        if (event.getUser().isBot()){
-            return;
-        }
-
-        ObjectResult<QuoteListMessage> resultOfFetchingQuoteListMessage = tryGetQuoteListMessageByMessageID(event.getMessageId());
-
-        if (resultOfFetchingQuoteListMessage.getResult()){
-            QuoteListMessage targetQuoteMessage = resultOfFetchingQuoteListMessage.getObject();
-
-            ReactionType reactionType = getReactionTypeFromEmoteName(event.getReactionEmote().getName());
-
-            if (reactionType == ReactionType.NEXT){
-                targetQuoteMessage.getNextPage();
-                Message messageToEdit = event.getChannel().getMessageById(event.getMessageId()).complete();
-                messageToEdit.editMessage("```" + targetQuoteMessage.getCurrentPageAsReadableDiscordString() + "```").queue();
-            } else if (reactionType == ReactionType.PREVIOUS){
-                targetQuoteMessage.getPreviousPage();
-                Message messageToEdit = event.getChannel().getMessageById(event.getMessageId()).complete();
-                messageToEdit.editMessage("```" + targetQuoteMessage.getCurrentPageAsReadableDiscordString() + "```").queue();
-            }
-        }
     }
 
     @Override
@@ -112,8 +112,8 @@ public class QuoteListMessageReactionListener implements OnMessageReaction {
             QuoteListMessage targetQuoteMessage = resultOfFetchingQuoteListMessage.getObject();
 
             Message messageToEdit = event.getChannel().getMessageById(event.getMessageId()).complete();
-            messageToEdit.addReaction(NEXT_EMOTE_NAME);
-            messageToEdit.addReaction(PREVIOUS_EMOTE_NAME);
+            messageToEdit.addReaction(NEXT_EMOTE_NAME).complete();
+            messageToEdit.addReaction(PREVIOUS_EMOTE_NAME).queue();
         }
     }
 

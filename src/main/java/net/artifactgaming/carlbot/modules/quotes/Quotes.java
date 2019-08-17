@@ -366,10 +366,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
                 quoteListMessageReactionListener.addQuoteListMessageToListener(quoteListMessage);
 
-                quoteMessage.editMessage("```" + quoteListMessage.getCurrentPageAsReadableDiscordString() + "```").queueAfter(200, TimeUnit.MILLISECONDS);
+                quoteMessage.editMessage("```" + quoteListMessage.getCurrentPageAsReadableDiscordString() + "```").queue();
 
-                quoteMessage.addReaction( QuoteListMessageReactionListener.PREVIOUS_EMOTE_NAME).completeAfter(500, TimeUnit.MILLISECONDS);
-                quoteMessage.addReaction( QuoteListMessageReactionListener.NEXT_EMOTE_NAME).queueAfter(500, TimeUnit.MILLISECONDS);
+                quoteMessage.addReaction( QuoteListMessageReactionListener.PREVIOUS_EMOTE_NAME).complete();
+                quoteMessage.addReaction( QuoteListMessageReactionListener.NEXT_EMOTE_NAME).queue();
             } else {
                 event.getChannel().sendMessage(
                         "There are no quotes in this guild!").queue();
