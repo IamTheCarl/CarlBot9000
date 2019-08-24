@@ -10,12 +10,7 @@ import java.util.TimerTask;
 /**
  * Represents a discord message sent by CarlBot in order to display the list of quotes.
  */
-public class QuoteListMessage {
-
-    /**
-     * How many quotes it can show in a 'page'
-     */
-    private static final int maxQuotesPerListCount = 5;
+class QuoteListMessage {
 
     /**
      * How many seconds spent idling before this message stops reacting to reactions.
@@ -27,7 +22,7 @@ public class QuoteListMessage {
      */
     private QuoteListMessageReactionListener thisHandler;
 
-    private ArrayList<ArrayList<Quote>> quotesListAsPages;
+    private ArrayList<QuotePage> quotePages;
 
     private int currentlyShownPageIndex;
 
@@ -43,17 +38,16 @@ public class QuoteListMessage {
         ///region Local_Function
 
         Runnable createQuotePagesFromQuoteLists = () -> {
-            quotesListAsPages = new ArrayList<ArrayList<Quote>>();
-            quotesListAsPages.add(new ArrayList<>());
+            quotePages = new ArrayList<>();
+            quotePages.add(new QuotePage());
 
-            for (int temp = 0, currPageIndex = 0, i = 0; i < quotesList.size(); ++i, ++temp){
-                if (temp >= maxQuotesPerListCount){
-                    temp = 0;
+            for (int currPageIndex = 0, i = 0; i < quotesList.size(); ++i){
+                if (!quotePages.get(currPageIndex).tryAddQuoteToPage(quotesList.get(i))){
                     ++currPageIndex;
-                    quotesListAsPages.add(new ArrayList<>());
-                }
+                    quotePages.add(new QuotePage());
 
-                quotesListAsPages.get(currPageIndex).add(quotesList.get(i));
+                    quotePages.get(currPageIndex).tryAddQuoteToPage(quotesList.get(i));
+                }
             }
         };
 
@@ -86,11 +80,11 @@ public class QuoteListMessage {
     }
 
     String getCurrentPageAsReadableDiscordString(){
-        return getQuotePageAsReadableDiscordString(quotesListAsPages.get(currentlyShownPageIndex));
+        return quotePages.get(currentlyShownPageIndex).getAsReadableDiscordString();
     }
 
     List<Quote> getCurrentPage(){
-        return quotesListAsPages.get(currentlyShownPageIndex);
+        return quotePages.get(currentlyShownPageIndex).quotesInPage;
     }
 
     List<Quote> getNextPage(){
@@ -99,7 +93,7 @@ public class QuoteListMessage {
 
         resetIdleTimer();
 
-        return quotesListAsPages.get(currentlyShownPageIndex);
+        return quotePages.get(currentlyShownPageIndex).quotesInPage;
     }
 
     List<Quote> getPreviousPage(){
@@ -108,7 +102,7 @@ public class QuoteListMessage {
 
         resetIdleTimer();
 
-        return quotesListAsPages.get(currentlyShownPageIndex);
+        return quotePages.get(currentlyShownPageIndex).quotesInPage;
     }
 
     void cancelAndPurgeIdleTimer(){
@@ -122,14 +116,14 @@ public class QuoteListMessage {
     }
 
     private void clampCurrentlyShownPageIndexToQuotePageSize(){
-        if (quotesListAsPages.size() <= currentlyShownPageIndex){
+        if (quotePages.size() <= currentlyShownPageIndex){
             currentlyShownPageIndex = 0;
         } else if (currentlyShownPageIndex < 0){
-            currentlyShownPageIndex = quotesListAsPages.size() - 1;
+            currentlyShownPageIndex = quotePages.size() - 1;
         }
     }
 
-    static String getQuotePageAsReadableDiscordString(List<Quote> quotePage){
+    static String getQuoteListAsReadableDiscordString(List<Quote> quotePage){
         StringBuilder readableStr = new StringBuilder(Utils.STRING_EMPTY);
 
         for (Quote quote : quotePage) {

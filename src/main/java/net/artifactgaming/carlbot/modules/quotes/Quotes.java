@@ -19,20 +19,16 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import net.sf.json.*;
-
-import javax.rmi.CORBA.Util;
 
 public class Quotes implements Module, AuthorityRequiring, PersistentModule, Documented {
 
@@ -540,9 +536,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
             List<Quote> quotesList = getAllQuotesFromGuild(event.getGuild());
 
-            if (quotesList.size() != 0){
-                Message quoteMessage = event.getChannel().sendMessage(
-                        "Fetching quotes...").complete();
+            Message quoteMessage = event.getChannel().sendMessage(
+                    "Fetching quotes...").complete();
+
+            if (quotesList.size() > QuotePage.maxQuotesPerListCount){
 
                 QuoteListMessage quoteListMessage = new QuoteListMessage(quotesList, quoteMessage.getId(), quoteListMessageReactionListener);
 
@@ -552,8 +549,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
                 quoteMessage.addReaction( QuoteListMessageReactionListener.PREVIOUS_EMOTE_NAME).complete();
                 quoteMessage.addReaction( QuoteListMessageReactionListener.NEXT_EMOTE_NAME).queue();
+            } else if (quotesList.size() > 0) {
+                quoteMessage.editMessage("```" + QuoteListMessage.getQuoteListAsReadableDiscordString(quotesList) + "```").queue();
             } else {
-                event.getChannel().sendMessage(
+                quoteMessage.editMessage(
                         "There are no quotes in this guild!").queue();
             }
         }
