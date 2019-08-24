@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot.modules.quotes;
 
+import net.artifactgaming.carlbot.Utils;
 import net.sf.json.*;
 
 public class Quote {
@@ -21,21 +22,23 @@ public class Quote {
         this.content = content;
     }
 
+    Quote(){
+        this.quoteOwner = new QuoteOwner(null, null);
+        this.key = null;
+        this.content = null;
+    }
+
     String getOwnerID() {
         return quoteOwner.getOwnerID();
     }
 
-    void setOwnerID(String ownerID) {
-        quoteOwner.setOwnerID(ownerID);
-    }
+    void setOwnerID(String ownerID) { quoteOwner.setOwnerID(ownerID); }
 
     String getOwnerName() {
         return quoteOwner.getOwnerName();
     }
 
-    void setOwnerName(String ownerName) {
-        quoteOwner.setOwnerName(ownerName);
-    }
+    void setOwnerName(String ownerName) { quoteOwner.setOwnerName(ownerName);  }
 
     String getKey() {
         return key;
