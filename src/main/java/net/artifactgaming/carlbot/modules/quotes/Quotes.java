@@ -17,13 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -167,6 +166,189 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         return quoteExists;
     }
 
+    private class ImportOldQuotesCommand implements Command, Documented, AuthorityRequiring {
+
+        @Override
+        public String getCallsign() {
+            return "importOld";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            ///region Local_Function
+
+            BooleanSupplier messageFirstAttachmentIsText = () -> {
+                Message.Attachment firstAttachment = event.getMessage().getAttachments().get(0);
+
+                return firstAttachment.getUrl().endsWith(".txt");
+            };
+
+            BooleanSupplier messageHasNoTextAttachment = () -> {
+                if (event.getMessage().getAttachments().size() == 0){
+                    return true;
+                } else return !messageFirstAttachmentIsText.getAsBoolean();
+            };
+
+            ///endregion
+
+            if (messageHasNoTextAttachment.getAsBoolean()){
+                event.getChannel().sendMessage("Please send a text file full of NitroBot quotes to import into this guild." + Utils.NEWLINE +  "(.txt extension)").queue();
+                return;
+            }
+
+            Message importingMessage = event.getChannel().sendMessage("Importing quotes...").complete();
+            ObjectResult<List<Quote>> getQuotesObjectResult = tryGetQuotesFromAttachment(event.getMessage().getAttachments().get(0));
+
+            if (getQuotesObjectResult.getResult()){
+                List<Quote> quotes = getQuotesObjectResult.getObject();
+
+                // TODO: Allow the user to give an input to override all the quotes.
+                addQuotesToGuild(event.getGuild(),quotes, false);
+
+                importingMessage.editMessage("Imported " + quotes.size() + " quotes!").queue();
+            } else {
+                importingMessage.editMessage(getQuotesObjectResult.getResultMessage()).queue();
+            }
+
+        }
+
+        private void addQuotesToGuild(Guild guild, List<Quote> quotes, boolean overrideQuote) throws SQLException {
+            for (Quote quote : quotes){
+                boolean quoteWithKeyExists = quoteKeyExistsOnGuildTable(guild, quote.getKey());
+
+                if (!quoteWithKeyExists) {
+                    addQuoteToGuildTable(guild, quote);
+                } else if (overrideQuote){
+                    updateGuildTableWithQuoteByQuoteKey(guild, quote, quote.getKey());
+                }
+            }
+        }
+
+        private ObjectResult<List<Quote>> tryGetQuotesFromAttachment(Message.Attachment attachment) throws Exception{
+            ///region Local_Function
+
+            Predicate<String> isEmptyOrWhitespaceOrNull = (testString) -> {
+                if (testString == null) {
+                    return true;
+                }
+
+                return testString.isEmpty() || testString.trim().isEmpty();
+            };
+
+            Predicate<String> isRemovedQuote = (stringLine) -> stringLine.matches("Quote \\d+ no longer exists(.*)");
+
+            Predicate<String> notPartOfQuoteOrRemovedQuote = (stringLine) -> {
+                if (isRemovedQuote.test(stringLine)){
+                    return true;
+                }
+
+                // Informative stuff.
+                if (stringLine.matches("^There are \\d+ quotes on this server with \\d+ removed quotes(.*)")){
+                    return true;
+                }
+
+                return isEmptyOrWhitespaceOrNull.test(stringLine);
+            };
+
+            ///endregion
+
+            ArrayList<Quote> quotes = new ArrayList<>();
+            InputStream inputStream =  attachment.getInputStream();
+
+            try (BufferedReader streamReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                Quote currentReadingQuote = new Quote();
+                boolean fetchingOwnerData = false;
+
+                String inputStr;
+                while ((inputStr = streamReader.readLine()) != null) {
+                    if (notPartOfQuoteOrRemovedQuote.test(inputStr)){
+                        currentReadingQuote = new Quote();
+                        fetchingOwnerData = false;
+                        continue;
+                    }
+
+                    if (fetchingOwnerData){
+                        // We do not need the creation date and the channel which this quote is created at.
+                        String ownerDataString = inputStr
+                                .replaceAll("Created \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} by ", Utils.STRING_EMPTY)
+                                .replaceAll("in <#\\d+>", Utils.STRING_EMPTY);
+
+                        ///region Setting_Owner_Name
+
+                        String ownerName = ownerDataString.replaceAll(" (<@\\d+>) ", Utils.STRING_EMPTY);
+                        // Ignore this quote if it does not have an owner name
+                        if (isEmptyOrWhitespaceOrNull.test(ownerName)){
+                            currentReadingQuote = new Quote();
+                            fetchingOwnerData = false;
+                            continue;
+                        }
+                        currentReadingQuote.setOwnerName(ownerName);
+
+                        ///endregion
+
+                        ///region Setting_Owner_ID
+
+                        String ownerID = ownerDataString
+                                .replaceAll("(.+<@)", Utils.STRING_EMPTY)
+                                .replaceAll("> ", Utils.STRING_EMPTY);
+
+                        // Ignore this quote if it does not have an owner ID
+                        if (isEmptyOrWhitespaceOrNull.test(ownerID)){
+                            currentReadingQuote = new Quote();
+                            fetchingOwnerData = false;
+                            continue;
+                        }
+                        currentReadingQuote.setOwnerID(ownerID);
+
+                        ///endregion
+
+                        quotes.add(currentReadingQuote);
+                        currentReadingQuote = new Quote();
+                        fetchingOwnerData = false;
+                    } else {
+                        currentReadingQuote = new Quote();
+
+                        String quoteContent = inputStr.replaceAll("Quote \\d+: ", Utils.STRING_EMPTY);
+                        currentReadingQuote.setContent(quoteContent);
+
+                        String quoteKey = inputStr
+                                .replaceAll("Quote ", Utils.STRING_EMPTY)
+                                .replaceAll(": (.*)", Utils.STRING_EMPTY);
+
+                        currentReadingQuote.setKey(quoteKey);
+
+                        fetchingOwnerData = true;
+                    }
+                }
+
+            } catch (Exception e) {
+                return new ObjectResult<>(null, "File is either invalid or formatted wrongly.");
+            }
+
+            return new ObjectResult<>(quotes);
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Quotes.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Use this command to import old quotes. (NitroBot format)";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "importOld";
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseQuotes() };
+        }
+    }
+
     private class ImportCommand implements Command, AuthorityRequiring, Documented {
         @Override
         public String getCallsign() {
@@ -228,10 +410,8 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
             InputStream jsonAsInputString =  attachment.getInputStream();
 
-            BufferedReader streamReader = new BufferedReader(new InputStreamReader(jsonAsInputString, "UTF-8"));
-
             JSONArray quoteJsonArray;
-            try {
+            try (BufferedReader streamReader = new BufferedReader(new InputStreamReader(jsonAsInputString, StandardCharsets.UTF_8))) {
                 String inputStr;
                 StringBuilder responseStrBuilder = new StringBuilder();
 
@@ -242,8 +422,6 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
                 quoteJsonArray = JSONArray.fromObject(responseStrBuilder.toString());
             } catch (Exception e) {
                 return new ObjectResult<List<Quote>>(null, "File is not JSON formatted.");
-            } finally {
-                streamReader.close();
             }
 
             return new ObjectResult<List<Quote>>(jsonArrayToQuotesList(quoteJsonArray));
@@ -358,9 +536,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
             List<Quote> quotesList = getAllQuotesFromGuild(event.getGuild());
 
-            if (quotesList.size() != 0){
-                Message quoteMessage = event.getChannel().sendMessage(
-                        "Fetching quotes...").complete();
+            Message quoteMessage = event.getChannel().sendMessage(
+                    "Fetching quotes...").complete();
+
+            if (quotesList.size() > QuotePage.maxQuotesPerListCount){
 
                 QuoteListMessage quoteListMessage = new QuoteListMessage(quotesList, quoteMessage.getId(), quoteListMessageReactionListener);
 
@@ -370,8 +549,10 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
                 quoteMessage.addReaction( QuoteListMessageReactionListener.PREVIOUS_EMOTE_NAME).complete();
                 quoteMessage.addReaction( QuoteListMessageReactionListener.NEXT_EMOTE_NAME).queue();
+            } else if (quotesList.size() > 0) {
+                quoteMessage.editMessage("```" + QuoteListMessage.getQuoteListAsReadableDiscordString(quotesList) + "```").queue();
             } else {
-                event.getChannel().sendMessage(
+                quoteMessage.editMessage(
                         "There are no quotes in this guild!").queue();
             }
         }
@@ -964,6 +1145,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
             commands.addCommand(new ExportCommand());
             commands.addCommand(new ImportCommand());
+            commands.addCommand(new ImportOldQuotesCommand());
         }
 
         @Override
