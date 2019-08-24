@@ -170,7 +170,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public String getCallsign() {
-            return "oldImport";
+            return "importOld";
         }
 
         @Override
