@@ -345,7 +345,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public Authority[] getRequiredAuthority() {
-            return new Authority[] { new UseQuotes() };
+            return new Authority[] { new QuoteAdmin() };
         }
     }
 
@@ -441,7 +441,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public Authority[] getRequiredAuthority() {
-            return new Authority[] { new UseQuotes() };
+            return new Authority[] { new QuoteAdmin() };
         }
 
         @Override
@@ -504,7 +504,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public Authority[] getRequiredAuthority() {
-            return new Authority[] { new UseQuotes() };
+            return new Authority[] { new QuoteAdmin() };
         }
 
         @Override
@@ -524,7 +524,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
     }
 
-    private class ListCommand implements Command, Documented {
+    private class ListCommand implements Command, AuthorityRequiring, Documented {
 
         @Override
         public String getCallsign() {
@@ -570,6 +570,11 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
         @Override
         public String getDocumentationCallsign() {
             return "list";
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseQuotes() };
         }
     }
 
@@ -704,7 +709,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
-            // TODO: Actual quote deletion command (Implement Documented afterwards)
+            // TODO: Actual quote deletion command
             Table table = getQuoteTable(event.getGuild());
 
             table.delete().execute();
@@ -714,7 +719,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public Authority[] getRequiredAuthority() {
-            return new Authority[] { new UseQuotes() };
+            return new Authority[] { new QuoteAdmin() };
         }
 
         @Override
