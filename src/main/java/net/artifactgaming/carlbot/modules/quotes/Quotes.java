@@ -170,7 +170,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public String getCallsign() {
-            return "importOld";
+            return "importNitori";
         }
 
         @Override
@@ -340,7 +340,7 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
         @Override
         public String getDocumentationCallsign() {
-            return "importOld";
+            return "importNitori";
         }
 
         @Override
