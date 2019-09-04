@@ -43,6 +43,52 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
         };
     }
 
+    private class SelfPeltCommand implements Command, AuthorityRequiring {
+
+        @Override
+        public String getCallsign() {
+            return "selfPelt";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            if (event.getGuild() == null){
+                event.getChannel().sendMessage("This command can only be used in a server!").queue();
+                return;
+            }
+
+            ToggleUserPeltStatus(event.getGuild(), event.getAuthor());
+        }
+
+        private void ToggleUserPeltStatus(Guild guildToPeltOn, User user) throws SQLException {
+            Table guildPeltTable = getPeltTableByGuild(guildToPeltOn);
+
+            ResultSet resultSet = guildPeltTable.select().where(PELTED_PERSON_ID, "=", user.getId()).execute();
+
+            if (resultSet.next()){
+                guildPeltTable.delete()
+                        .where(PELTED_PERSON_ID, "=", user.getId()).execute();
+            } else {
+                guildPeltTable.insert()
+                        .set(PELTED_PERSON_ID, user.getId())
+                        .set(PELTED_PERSON_NAME, user.getName())
+                        .execute();
+            }
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Pelt.this;
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[]{
+                    new SelfPelt()
+            };
+        }
+    }
+
     private class UnpeltCommand implements Command, AuthorityRequiring {
 
         @Override
