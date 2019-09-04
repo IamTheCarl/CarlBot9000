@@ -1,13 +1,15 @@
-package net.artifactgaming.carlbot.modules;
+package net.artifactgaming.carlbot.modules.pelt;
 
 import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.Module;
+import net.artifactgaming.carlbot.modules.Echo;
+import net.artifactgaming.carlbot.modules.authority.Authority;
+import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
 import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
@@ -18,7 +20,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Pelt implements Module, Documented, PersistentModule {
+public class Pelt implements Module, Documented, PersistentModule, AuthorityRequiring {
 
     /**
      * Used in the SQL Data table to represent the column name to store the pelted person's ID.
@@ -33,7 +35,15 @@ public class Pelt implements Module, Documented, PersistentModule {
     private Logger logger = LoggerFactory.getLogger(Echo.class);
     private Persistence persistence;
 
-    private class PeltCommand implements Command {
+    @Override
+    public Authority[] getRequiredAuthority() {
+        return new Authority[] {
+                new SelfPelt(),
+                new AllPelt()
+        };
+    }
+
+    private class PeltCommand implements Command, AuthorityRequiring {
 
         @Override
         public String getCallsign() {
@@ -76,6 +86,13 @@ public class Pelt implements Module, Documented, PersistentModule {
         @Override
         public Module getParentModule() {
             return Pelt.this;
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] {
+                    new AllPelt()
+            };
         }
     }
 
