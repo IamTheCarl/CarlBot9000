@@ -260,7 +260,11 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
 
     @Override
     public Command[] getCommands(CarlBot carlbot) {
-        return new Command[] {new PeltCommand()};
+        return new Command[] {
+                new PeltCommand(),
+                new SelfPeltCommand(),
+                new UnpeltCommand()
+        };
     }
 
     @Override
