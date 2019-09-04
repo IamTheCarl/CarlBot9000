@@ -43,6 +43,61 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
         };
     }
 
+    private class UnpeltCommand implements Command, AuthorityRequiring {
+
+        @Override
+        public String getCallsign() {
+            return "unpelt";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            // TODO: Refactor with 'PeltCommand' (DRY principle)
+            if (event.getGuild() == null){
+                event.getChannel().sendMessage("This command can only be used in a server!").queue();
+                return;
+            }
+
+            ObjectResult<List<User>> mentionedUsersResult = tryGetMentionedUsersFromMessage(event);
+
+            if (!mentionedUsersResult.getResult()){
+                event.getChannel().sendMessage("You need to mention a user to unpelt!").queue();
+                return;
+            }
+
+            List<User> usersToUnpelt = mentionedUsersResult.getObject();
+
+            removeUsersToPelt(event.getGuild(), usersToUnpelt);
+        }
+
+        private void removeUsersToPelt(Guild guildToPeltOn, List<User> users) throws SQLException {
+            Table guildPeltTable = getPeltTableByGuild(guildToPeltOn);
+
+            for (User userToPelt: users) {
+                if (userToPelt.isBot()){ continue; }
+
+                ResultSet resultSet = guildPeltTable.select().where(PELTED_PERSON_ID, "=", userToPelt.getId()).execute();
+
+                if (resultSet.next()){
+                    guildPeltTable.delete()
+                            .where(PELTED_PERSON_ID, "=", userToPelt.getId()).execute();
+                }
+            }
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Pelt.this;
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] {
+                    new AllPelt()
+            };
+        }
+    }
+
     private class PeltCommand implements Command, AuthorityRequiring {
 
         @Override
@@ -66,13 +121,15 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
 
             List<User> usersToPelt = mentionedUsersResult.getObject();
 
-            addToUsersToPelt(event.getGuild(), usersToPelt);
+            addUsersToPelt(event.getGuild(), usersToPelt);
         }
 
-        private void addToUsersToPelt(Guild guildToPeltOn, List<User> users) throws SQLException {
+        private void addUsersToPelt(Guild guildToPeltOn, List<User> users) throws SQLException {
             Table guildPeltTable = getPeltTableByGuild(guildToPeltOn);
 
             for (User userToPelt: users) {
+                if (userToPelt.isBot()){ continue; }
+
                 ResultSet resultSet = guildPeltTable.select().where(PELTED_PERSON_ID, "=", userToPelt.getId()).execute();
 
                 if (!resultSet.next()){
