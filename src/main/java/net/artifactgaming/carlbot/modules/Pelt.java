@@ -13,6 +13,7 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,11 @@ public class Pelt implements Module, Documented, PersistentModule {
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            if (event.getGuild() == null){
+                event.getChannel().sendMessage("This command can only be used in a server!").queue();
+                return;
+            }
+
             ObjectResult<List<User>> mentionedUsersResult = tryGetMentionedUsersFromMessage(event);
 
             if (!mentionedUsersResult.getResult()){
@@ -48,39 +54,51 @@ public class Pelt implements Module, Documented, PersistentModule {
                 return;
             }
 
-            List<User> usersToPelt = filterOutSameUsersInList(mentionedUsersResult.getObject());
+            List<User> usersToPelt = mentionedUsersResult.getObject();
 
-            for (User user: usersToPelt){
-                // TODO: Add to the table on the list of persons to pelt
-            }
+            addToUsersToPelt(event.getGuild(), usersToPelt);
         }
 
-        private ObjectResult<List<User>> tryGetMentionedUsersFromMessage(MessageReceivedEvent event){
-            List<User> mentionedUsers = event.getMessage().getMentionedUsers();
+        private void addToUsersToPelt(Guild guildToPeltOn, List<User> users) throws SQLException {
+            Table guildPeltTable = getPeltTableByGuild(guildToPeltOn);
 
-            if (mentionedUsers.size() == 0){
-                return new ObjectResult<>(null);
-            } else {
-                return new ObjectResult<>(mentionedUsers);
-            }
-        }
+            for (User userToPelt: users) {
+                ResultSet resultSet = guildPeltTable.select().where(PELTED_PERSON_ID, "=", userToPelt.getId()).execute();
 
-        private List<User> filterOutSameUsersInList(List<User> input){
-            List<User> copy = new ArrayList<>();
-
-            for (User user: input) {
-                if (!copy.contains(user)){
-                    copy.add(user);
+                if (!resultSet.next()){
+                    guildPeltTable.insert()
+                            .set(PELTED_PERSON_ID, userToPelt.getId())
+                            .set(PELTED_PERSON_NAME, userToPelt.getName()).execute();
                 }
             }
-
-            return copy;
         }
 
         @Override
         public Module getParentModule() {
             return Pelt.this;
         }
+    }
+
+    private ObjectResult<List<User>> tryGetMentionedUsersFromMessage(MessageReceivedEvent event){
+        List<User> mentionedUsers = event.getMessage().getMentionedUsers();
+
+        if (mentionedUsers.size() == 0){
+            return new ObjectResult<>(null);
+        } else {
+            return new ObjectResult<>(filterOutSameUsersInList(mentionedUsers));
+        }
+    }
+
+    private List<User> filterOutSameUsersInList(List<User> input){
+        List<User> copy = new ArrayList<>();
+
+        for (User user: input) {
+            if (!copy.contains(user)){
+                copy.add(user);
+            }
+        }
+
+        return copy;
     }
 
     private Table getPeltTableByGuild(Guild guild) throws SQLException {
