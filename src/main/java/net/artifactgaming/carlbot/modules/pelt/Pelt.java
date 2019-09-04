@@ -4,6 +4,7 @@ import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.modules.authority.Authority;
+import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
@@ -35,6 +36,8 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
     private Logger logger = LoggerFactory.getLogger(Echo.class);
     private Persistence persistence;
 
+    private AuthorityManagement authorityManagement;
+
     @Override
     public Authority[] getRequiredAuthority() {
         return new Authority[] {
@@ -44,7 +47,6 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
     }
 
     private class SelfPeltCommand implements Command, AuthorityRequiring {
-
         @Override
         public String getCallsign() {
             return "selfPelt";
@@ -239,7 +241,21 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
 
     @Override
     public void setup(CarlBot carlbot) {
+        // Get the authority module.
+        authorityManagement = (AuthorityManagement) carlbot.getModule(AuthorityManagement.class);
 
+        if (authorityManagement == null) {
+            logger.error("Authority module is not loaded.");
+            carlbot.crash();
+        }
+
+        // Get the persistence module.
+        persistence = (Persistence) carlbot.getModule(Persistence.class);
+
+        if (persistence == null) {
+            logger.error("Persistence module is not loaded.");
+            carlbot.crash();
+        }
     }
 
     @Override

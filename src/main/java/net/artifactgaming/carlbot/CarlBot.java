@@ -3,6 +3,7 @@ package net.artifactgaming.carlbot;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.listeners.MessageReader;
+import net.artifactgaming.carlbot.modules.pelt.Pelt;
 import net.artifactgaming.carlbot.modules.quotes.Quotes;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
@@ -41,6 +42,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
     private ArrayList<MessageReader> messageReaders = new ArrayList<>();
     private ArrayList<OnMessageReaction> onMessageReactionListeners = new ArrayList<>();
+    private ArrayList<MessageReader> onMessageReceivedListeners = new ArrayList<>();
 
     ArrayList<CommandPermissionChecker> permissionCheckers = new ArrayList<>();
 
@@ -71,6 +73,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.addModule(new Persistence());
         bot.addModule(new SelfDocumentation());
         bot.addModule(new Schedules());
+        bot.addModule(new Pelt());
 
         bot.run();
     }
@@ -81,6 +84,10 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
     public void addOnMessageReactionListener(OnMessageReaction onMessageReaction){
         onMessageReactionListeners.add(onMessageReaction);
+    }
+
+    public void addOnMessageReceivedListener(MessageReader onMessageReceived){
+        onMessageReceivedListeners.add(onMessageReceived);
     }
 
     public void loadConfig(File file) throws IOException {
@@ -176,6 +183,10 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         if (!event.getAuthor().isBot()) {
             for (MessageReader reader : messageReaders) {
                 reader.onMessageReceived(event);
+            }
+
+            for (MessageReader listener: onMessageReceivedListeners){
+                listener.onMessageReceived(event);
             }
 
             String rawContent = event.getMessage().getContentRaw();
