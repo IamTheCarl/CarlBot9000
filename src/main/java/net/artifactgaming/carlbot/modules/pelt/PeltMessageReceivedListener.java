@@ -19,7 +19,7 @@ public class PeltMessageReceivedListener implements MessageReader {
         }
 
         try {
-            if (peltModule.userIsPeltedInGuild(event.getAuthor().getId(), event.getGuild().getId())) {
+            if (peltModule.userIsPeltedInGuild(event.getAuthor().getId(), event.getGuild())) {
                 // TODO: Actually pelt this user.
                 event.getTextChannel().sendMessage("TODO: Actually pelt this user.").queue();
             }

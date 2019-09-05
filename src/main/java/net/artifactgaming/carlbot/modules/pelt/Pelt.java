@@ -62,14 +62,26 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
                 return;
             }
 
-            ToggleUserPeltStatus(event.getGuild(), event.getAuthor());
+            if (ToggleUserPeltStatus(event.getGuild(), event.getAuthor())){
+                event.getChannel().sendMessage("You are now pelted!").queue();
+            } else {
+                event.getChannel().sendMessage("You are no longer pelted!").queue();
+            }
         }
 
-        private void ToggleUserPeltStatus(Guild guildToPeltOn, User user) throws SQLException {
+        /**
+         * Toggle's a user's pelt status on the guild.
+         * @param guildToPeltOn The guild which to target.
+         * @param user The user to toggle the pelt status on.
+         * @return True if the user got himself pelted.
+         * @throws SQLException
+         */
+        private boolean ToggleUserPeltStatus(Guild guildToPeltOn, User user) throws SQLException {
             Table guildPeltTable = getPeltTableByGuild(guildToPeltOn);
 
             ResultSet resultSet = guildPeltTable.select().where(PELTED_PERSON_ID, "=", user.getId()).execute();
 
+            boolean pelted = false;
             if (resultSet.next()){
                 guildPeltTable.delete()
                         .where(PELTED_PERSON_ID, "=", user.getId()).execute();
@@ -78,7 +90,10 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
                         .set(PELTED_PERSON_ID, user.getId())
                         .set(PELTED_PERSON_NAME, user.getName())
                         .execute();
+                pelted = true;
             }
+            resultSet.close();
+            return pelted;
         }
 
         @Override
@@ -243,12 +258,8 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
         return guildTable;
     }
 
-    boolean userIsPeltedInGuild(String guildId, String userId) throws SQLException {
-        Table peltGuildTable = persistence.getGuildTable(guildId, this);
-        if (!peltGuildTable.exists()){
-            // Guild is not in the table; Not pelted.
-            return false;
-        }
+    boolean userIsPeltedInGuild(String userId, Guild guild) throws SQLException {
+        Table peltGuildTable = getPeltTableByGuild(guild);
 
         boolean userIsPeltedInGuild = false;
         ResultSet resultSet = peltGuildTable.select().where(PELTED_PERSON_ID, "=", userId).execute();
