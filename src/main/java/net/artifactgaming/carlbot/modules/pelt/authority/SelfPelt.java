@@ -1,4 +1,4 @@
-package net.artifactgaming.carlbot.modules.pelt;
+package net.artifactgaming.carlbot.modules.pelt.authority;
 
 import net.artifactgaming.carlbot.modules.authority.Authority;
 

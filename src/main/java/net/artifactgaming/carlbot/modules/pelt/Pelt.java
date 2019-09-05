@@ -6,6 +6,8 @@ import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.modules.authority.Authority;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
+import net.artifactgaming.carlbot.modules.pelt.authority.AllPelt;
+import net.artifactgaming.carlbot.modules.pelt.authority.SelfPelt;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
