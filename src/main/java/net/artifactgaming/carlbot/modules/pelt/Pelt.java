@@ -35,10 +35,11 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
      */
     private static final String PELTED_PERSON_NAME = "pelted_person_name";
 
-    private Logger logger = LoggerFactory.getLogger(Echo.class);
+    Logger logger = LoggerFactory.getLogger(Echo.class);
     private Persistence persistence;
 
     private AuthorityManagement authorityManagement;
+    private PeltMessageReceivedListener peltMessageReceivedListener;
 
     @Override
     public Authority[] getRequiredAuthority() {
@@ -88,6 +89,7 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
         @Override
         public Authority[] getRequiredAuthority() {
             return new Authority[]{
+                    new AllPelt(),
                     new SelfPelt()
             };
         }
@@ -241,6 +243,22 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
         return guildTable;
     }
 
+    boolean userIsPeltedInGuild(String guildId, String userId) throws SQLException {
+        Table peltGuildTable = persistence.getGuildTable(guildId, this);
+        if (!peltGuildTable.exists()){
+            // Guild is not in the table; Not pelted.
+            return false;
+        }
+
+        boolean userIsPeltedInGuild = false;
+        ResultSet resultSet = peltGuildTable.select().where(PELTED_PERSON_ID, "=", userId).execute();
+        if (resultSet.next()){
+            userIsPeltedInGuild = true;
+        }
+        resultSet.close();
+        return userIsPeltedInGuild;
+    }
+
     @Override
     public void setup(CarlBot carlbot) {
         // Get the authority module.
@@ -258,6 +276,9 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
             logger.error("Persistence module is not loaded.");
             carlbot.crash();
         }
+
+        peltMessageReceivedListener = new PeltMessageReceivedListener(this);
+        carlbot.addOnMessageReceivedListener(peltMessageReceivedListener);
     }
 
     @Override
