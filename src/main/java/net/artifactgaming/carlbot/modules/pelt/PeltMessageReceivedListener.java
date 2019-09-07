@@ -10,19 +10,33 @@ import java.util.function.Supplier;
 public class PeltMessageReceivedListener implements MessageReader {
     private static final String PEANUT_EMOTE_UNICODE = "\uD83E\uDD5C"; // https://emojiguide.org/peanuts
 
+    // https://emojiguide.org
     private static final String[] OTHER_RANDOM_EMOTE_UNICODE = new String[]{
-            "\uD83C\uDF30", //ChestNut https://emojiguide.org/chestnut
-            "\uD83D\uDD29", // Nut and Bolt https://emojiguide.org/nut-and-bolt
-            "\uD83D\uDC4C", // Ok Hand https://emojiguide.org/ok-hand
-            "\uD83D\uDCA6" // Sweat droplets https://emojiguide.org/sweat-droplets
+            "\uD83C\uDF30",
+            "\uD83D\uDD29",
+            "\uD83D\uDC4C",
+            "\uD83D\uDCA6",
+            "\uD83C\uDF4C",
+            "\uD83C\uDF59",
+            "\uD83D\uDE29",
+            "\uD83E\uDDE0",
+            "\uD83D\uDCAF",
+            "\uD83D\uDE4C",
+            "\uD83D\uDC3F",
+            "\uD83D\uDCA2",
+            "\uD83D\uDCA3",
+            "\uD83D\uDCA5",
+            "\uD83E\uDD21",
+            "\uD83D\uDC7B",
+            "\uD83E\uDD16",
+            "\uD83D\uDE48",
+            "\uD83D\uDE49",
+            "\uD83D\uDE4A"
     };
 
-    /**
-     * Out of 100;
-     * Putting more than 100 always guarantees a peanut.
-     * Putting non-positive guarantees a random emote chosen.
-     */
-    private static final int CHANCE_TO_GENERATE_PEANUT = 95;
+    private static final int CHANCE_TO_GENERATE_PEANUT = 299;
+
+    private static final int GENERATE_CHANCE_BOUND = 301;
 
     private Pelt peltModule;
 
@@ -53,7 +67,7 @@ public class PeltMessageReceivedListener implements MessageReader {
         };
         ///endregion
 
-        int generatedValue = rand.nextInt(101);
+        int generatedValue = rand.nextInt(GENERATE_CHANCE_BOUND);
         if (CHANCE_TO_GENERATE_PEANUT > generatedValue){
             return PEANUT_EMOTE_UNICODE;
         } else {
