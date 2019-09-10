@@ -16,17 +16,15 @@ public class Utils {
 
     public final static String NEWLINE = "\r\n";
 
-    ///region https://gist.github.com/jamietech/7c0b01be2ff6439c97fbec55e82daad5
-    private final static String[] emojiLetters = new String[] { "\uD83C\uDDE6", "\uD83C\uDDE7", "\uD83C\uDDE8", "\uD83C\uDDE9", "\uD83C\uDDEA", "\uD83C\uDDEB", "\uD83C\uDDEC", "\uD83C\uDDED", "\uD83C\uDDEE", "\uD83C\uDDEF", "\uD83C\uDDF0", "\uD83C\uDDF1", "\uD83C\uDDF2", "\uD83C\uDDF3", "\uD83C\uDDF4", "\uD83C\uDDF5", "\uD83C\uDDF6", "\uD83C\uDDF7", "\uD83C\uDDF8", "\uD83C\uDDF9", "\uD83C\uDDFA", "\uD83C\uDDFB", "\uD83C\uDDFC", "\uD83C\uDDFD", "\uD83C\uDDFE", "\uD83C\uDDFF" };
-
-    public static void reactMessageWithEmoji(Message message, String emojiName) {
-        for (final char c : emojiName.toUpperCase().toCharArray()) {
-            message.addReaction(emojiLetters[c - 64 - 1]).queue(); // 64 is char padding, 1 is array starting at 0
+    public static ObjectResult<Integer> tryGetInteger( String input ) {
+        try {
+            int result = Integer.parseInt(input);
+            return new ObjectResult<>(result);
+        }
+        catch( Exception e ) {
+            return new ObjectResult<>(null);
         }
     }
-
-    ///endregion
-
 
     /**
      * Removes @everyone and @here pings from messages.

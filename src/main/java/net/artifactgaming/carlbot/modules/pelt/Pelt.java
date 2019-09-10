@@ -35,7 +35,7 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
      */
     private static final String PELTED_PERSON_NAME = "pelted_person_name";
 
-    Logger logger = LoggerFactory.getLogger(Echo.class);
+    Logger logger = LoggerFactory.getLogger(Pelt.class);
     private Persistence persistence;
 
     private AuthorityManagement authorityManagement;
