@@ -3,6 +3,7 @@ package net.artifactgaming.carlbot;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.listeners.MessageReader;
+import net.artifactgaming.carlbot.modules.games.Games;
 import net.artifactgaming.carlbot.modules.pelt.Pelt;
 import net.artifactgaming.carlbot.modules.purge.Purge;
 import net.artifactgaming.carlbot.modules.quotes.Quotes;
@@ -76,6 +77,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.addModule(new Schedules());
         bot.addModule(new Pelt());
         bot.addModule(new Purge());
+        bot.addModule(new Games());
 
         bot.run();
     }
