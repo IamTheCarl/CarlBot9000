@@ -17,6 +17,24 @@ public class Games implements Module, Documented {
 
     private class MinesweeperCommand implements Command, Documented {
 
+        private static final String BOMB_EMOTE = "\uD83D\uDCA3";
+
+        /**
+         * Use it when the tile itself is safe.
+         * Index is equals to the number of bombs surrounding the tile.
+         */
+        private final String[] TILE_COUNT_EMOTE  = {
+                "\uD83C\uDD97",
+                ":one:",
+                ":two:",
+                ":three:",
+                ":four:",
+                ":five:",
+                ":six:",
+                ":seven:",
+                ":eight:"
+        };
+
         @Override
         public String getCallsign() {
             return "minesweeper";
@@ -30,11 +48,10 @@ public class Games implements Module, Documented {
 
             for (int row = 0; row < MinesweeperGenerator.rows; ++row){
                 for (int column = 0; column < MinesweeperGenerator.columns; ++column){
-                    // TODO: Use Emote + Spoiler
                     if (playField[row][column].isSafe()){
-                        playFieldAsString.append(playField[row][column].getSurroundingMinesCount());
+                        playFieldAsString.append("||" + TILE_COUNT_EMOTE[playField[row][column].getSurroundingMinesCount()] + "||");
                     } else {
-                        playFieldAsString.append('B');
+                        playFieldAsString.append("||"+ BOMB_EMOTE + "||");
                     }
                 }
                 playFieldAsString.append(Utils.NEWLINE);
