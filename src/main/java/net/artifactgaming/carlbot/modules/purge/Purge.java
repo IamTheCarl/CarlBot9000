@@ -47,34 +47,17 @@ public class Purge implements Module, AuthorityRequiring, Documented {
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
-            ///region Local_Function
-            Supplier<ObjectResult<Integer>> tryGetNumberOfMessagesToPurge = () -> {
-                if (tokens.size() <= 0){
-                    return new ObjectResult<>(null);
-                }
 
-                ObjectResult<Integer> getNoOfMessageToDeleteObjectResult = Utils.tryGetInteger(tokens.get(0));
+            // Get first positive number
+            int numberOfMessagesToDelete = Utils.getFirstOrDefaultNumber(tokens, -1, (x) -> x > 0);
 
-                if (getNoOfMessageToDeleteObjectResult.getResult()){
-                    if (getNoOfMessageToDeleteObjectResult.getObject() > 0) {
-                        return new ObjectResult<>(getNoOfMessageToDeleteObjectResult.getObject());
-                    }
-                }
-
-                return new ObjectResult<>(null);
-            };
-            ///endregion
-
-            ObjectResult<Integer> numberOfMessagesToDeleteResult = tryGetNumberOfMessagesToPurge.get();
-
-            if (numberOfMessagesToDeleteResult.getResult()){
-                int numberMessagesToDelete = numberOfMessagesToDeleteResult.getObject();
-                List<Message> messagesToDelete =  event.getChannel().getHistoryBefore(event.getMessageId(), numberMessagesToDelete).complete().getRetrievedHistory();
+            if (numberOfMessagesToDelete < 0){
+                List<Message> messagesToDelete =  event.getChannel().getHistoryBefore(event.getMessageId(), numberOfMessagesToDelete).complete().getRetrievedHistory();
                 // Delete the command message too.
                 event.getMessage().delete().queue();
 
                 event.getTextChannel().deleteMessages(messagesToDelete).queue((e)->{
-                    event.getChannel().sendMessage(numberMessagesToDelete + " messages has been deleted!").queue();
+                    event.getChannel().sendMessage(numberOfMessagesToDelete + " messages has been deleted!").queue();
                 });
             } else {
                 event.getChannel().sendMessage("You need to specify a positive number of messages to delete!").queue();
