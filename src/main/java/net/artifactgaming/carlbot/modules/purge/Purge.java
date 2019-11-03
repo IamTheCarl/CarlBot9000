@@ -10,6 +10,7 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.nio.ch.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,16 +52,24 @@ public class Purge implements Module, AuthorityRequiring, Documented {
             // Get first positive number
             int numberOfMessagesToDelete = Utils.getFirstOrDefaultNumber(tokens, -1, (x) -> x > 0);
 
-            if (numberOfMessagesToDelete < 0){
+            if (numberOfMessagesToDelete > 100){
+                // TODO: Make it able to delete more than 100 messages at a time.
+                event.getChannel().sendMessage("I currently do not support deleting more than 100 messages!").queue();
+            } else if (numberOfMessagesToDelete > 1){
                 List<Message> messagesToDelete =  event.getChannel().getHistoryBefore(event.getMessageId(), numberOfMessagesToDelete).complete().getRetrievedHistory();
-                // Delete the command message too.
-                event.getMessage().delete().queue();
 
-                event.getTextChannel().deleteMessages(messagesToDelete).queue((e)->{
-                    event.getChannel().sendMessage(numberOfMessagesToDelete + " messages has been deleted!").queue();
-                });
+                try {
+                    event.getTextChannel().deleteMessages(messagesToDelete).queue((e) -> {
+                        event.getChannel().sendMessage(numberOfMessagesToDelete + " messages has been deleted!").queue();
+                        // Delete the command message too.
+                        event.getMessage().delete().queue();
+                    });
+                } catch (IllegalArgumentException e){
+                    // TODO: Allow it to delete messages more than 2 weeks old.
+                    event.getChannel().sendMessage("Sorry, some of the messages were more than 2 weeks old." + Utils.NEWLINE + "I cannot delete messages more than 2 weeks old!").queue();
+                }
             } else {
-                event.getChannel().sendMessage("You need to specify a positive number of messages to delete!").queue();
+                event.getChannel().sendMessage("You need to specify a positive number of messages to delete!" + Utils.NEWLINE + "(I can only delete more than one message, and no more than 100.)").queue();
             }
         }
 
