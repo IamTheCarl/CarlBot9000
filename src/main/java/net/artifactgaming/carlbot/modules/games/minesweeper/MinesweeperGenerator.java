@@ -1,5 +1,7 @@
 package net.artifactgaming.carlbot.modules.games.minesweeper;
 
+import net.artifactgaming.carlbot.Utils;
+
 public class MinesweeperGenerator {
     public static final int rows = 10;
     public static final int columns = 10;
@@ -56,5 +58,18 @@ public class MinesweeperGenerator {
             }
         }
         return emptyField;
+    }
+
+    public static String toReadableString(MinesweeperTile[][] playField){
+        StringBuilder playFieldAsString = new StringBuilder();
+
+        for (int row = 0; row < MinesweeperGenerator.rows; ++row){
+            for (int column = 0; column < MinesweeperGenerator.columns; ++column){
+                playFieldAsString.append("||").append(playField[row][column].toEmoteString()).append("||");
+            }
+            playFieldAsString.append(Utils.NEWLINE);
+        }
+
+        return playFieldAsString.toString();
     }
 }
