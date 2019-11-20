@@ -17,7 +17,6 @@ public class Games implements Module, Documented {
 
     private class MinesweeperCommand implements Command, Documented {
 
-
         @Override
         public String getCallsign() {
             return "minesweeper";

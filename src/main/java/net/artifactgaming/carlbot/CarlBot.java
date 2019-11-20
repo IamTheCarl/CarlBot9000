@@ -54,8 +54,6 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
     private CommandHandler commands = new CommandHandler(this);
 
-
-
     /*
      * A reminder to myself because I have goldfish memory:
      * You can enable the debug logger from command line by setting the property org.slf4j.simpleLogger.defaultLogLevel
