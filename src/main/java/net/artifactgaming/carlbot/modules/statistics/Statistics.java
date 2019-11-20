@@ -42,8 +42,7 @@ public class Statistics implements Module, Documented {
     public void setup(CarlBot carlbot) {
         databaseHandler = new StatisticsDatabaseHandler(carlbot);
 
-        messageStatisticCollector = new MessageStatisticCollector();
-        // TODO: Start tracking guilds that want their data to be tracked.
+        messageStatisticCollector = new MessageStatisticCollector(databaseHandler);
 
         carlbot.addOnMessageReceivedListener(messageStatisticCollector);
     }
@@ -62,7 +61,21 @@ public class Statistics implements Module, Documented {
 
         @Override
         public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            if (event.getGuild() == null){
+                event.getTextChannel().sendMessage("Statistic tracking can only be enabled in servers!").queue();
+                return;
+            }
 
+            StatisticsSettings statisticsSettings = databaseHandler.getStatisticSettingsInGuild(event.getGuild());
+            statisticsSettings.setEnabled(!statisticsSettings.isEnabled());
+
+            databaseHandler.updateStatisticSettingsInGuild(event.getGuild(), statisticsSettings);
+
+            if (statisticsSettings.isEnabled()){
+                event.getTextChannel().sendMessage("Statistic tracking for this server is now enabled!").queue();
+            } else {
+                event.getTextChannel().sendMessage("Statistic tracking for this server is now disabled!").queue();
+            }
         }
 
         @Override
@@ -92,6 +105,8 @@ public class Statistics implements Module, Documented {
 
         StatisticsCommand(CarlBot carlbot) {
             commands = new CommandHandler(carlbot);
+
+            commands.addCommand(new ToggleStatisticsCommand());
         }
 
         @Override

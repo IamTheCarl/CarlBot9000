@@ -1,20 +1,21 @@
 package net.artifactgaming.carlbot.modules.statistics;
 
 import net.artifactgaming.carlbot.listeners.MessageReader;
+import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.StatisticsDatabaseHandler;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-import sun.security.util.Debug;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
+import java.sql.SQLException;
 
 public class MessageStatisticCollector implements MessageReader {
 
-    /**
-     * ID of guilds to collect data from.
-     */
-    private HashSet<String> targetGuildIDs;
+    private Logger logger = LoggerFactory.getLogger(Statistics.class);
 
-    public MessageStatisticCollector(){
-        targetGuildIDs = new HashSet<>();
+    private StatisticsDatabaseHandler databaseHandler;
+
+    MessageStatisticCollector(StatisticsDatabaseHandler statisticsDatabaseHandler){
+        databaseHandler = statisticsDatabaseHandler;
     }
 
     @Override
@@ -22,25 +23,19 @@ public class MessageStatisticCollector implements MessageReader {
         if (messageFromBotOrNonGuild(event)){
             return;
         }
+        try {
+            StatisticsSettings statsSettings = databaseHandler.getStatisticSettingsInGuild(event.getGuild());
 
-        if (isTrackingGuild(event.getGuild().getId())){
-            event.getTextChannel().sendMessage("OK").queue(); // DEBUG!!!
+            if (statsSettings.isEnabled()){
+                event.getTextChannel().sendMessage("OK").queue(); // DEBUG!!!
+            }
+
+        } catch (SQLException e){
+            logger.error(e.getMessage());
         }
     }
 
     private boolean messageFromBotOrNonGuild(MessageReceivedEvent event){
         return event.getAuthor().isBot() || event.getGuild() == null;
-    }
-
-    public boolean isTrackingGuild(String guildID){
-        return targetGuildIDs.contains(guildID);
-    }
-
-    public void untrackGuildStatisticsByID(String guildID){
-        targetGuildIDs.remove(guildID);
-    }
-
-    public void trackGuildStatisticsByID(String guildID){
-        targetGuildIDs.add(guildID);
     }
 }

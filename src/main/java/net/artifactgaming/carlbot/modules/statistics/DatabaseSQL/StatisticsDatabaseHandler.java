@@ -16,7 +16,7 @@ import java.sql.SQLException;
 
 public class StatisticsDatabaseHandler implements PersistentModule {
 
-    private static Logger logger = LoggerFactory.getLogger(Statistics.class);
+    private Logger logger = LoggerFactory.getLogger(Statistics.class);
 
     ///region Columns names for settings
     private static final String SETTINGS_IDENTIFIER = "SETTINGS_NAME";
@@ -49,6 +49,13 @@ public class StatisticsDatabaseHandler implements PersistentModule {
         ResultSet isEnabledResult = settingsTable.select().where(SETTINGS_IDENTIFIER, "=", StatisticsSettings.IS_ENABLED).execute();
         if (isEnabledResult.next()){
             result.setEnabledByString(isEnabledResult.getString(SETTINGS_VALUE));
+        } else {
+            // Had no value; Insert with default value.
+            settingsTable
+                    .insert()
+                    .set(SETTINGS_IDENTIFIER, StatisticsSettings.IS_ENABLED)
+                    .set(SETTINGS_VALUE, result.isEnabledToString())
+                    .execute();
         }
 
         return result;

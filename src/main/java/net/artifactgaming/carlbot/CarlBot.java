@@ -12,6 +12,7 @@ import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.schedule.Schedules;
 import net.artifactgaming.carlbot.modules.selfdocumentation.SelfDocumentation;
+import net.artifactgaming.carlbot.modules.statistics.Statistics;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.entities.User;
@@ -80,6 +81,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.addModule(new Pelt());
         bot.addModule(new Purge());
         bot.addModule(new Games());
+        bot.addModule(new Statistics());
 
         bot.run();
     }
