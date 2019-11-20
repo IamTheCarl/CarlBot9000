@@ -1,36 +1,32 @@
 package net.artifactgaming.carlbot.modules.statistics;
 
-import net.artifactgaming.carlbot.CarlBot;
-import net.artifactgaming.carlbot.Command;
+import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.authority.Authority;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
-import net.artifactgaming.carlbot.modules.quotes.Quotes;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
+import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.StatisticsDatabaseHandler;
+import net.artifactgaming.carlbot.modules.statistics.authority.ToggleStatistics;
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
 
-public class Statistics implements Module, AuthorityRequiring, PersistentModule, Documented {
+public class Statistics implements Module, Documented {
 
-    private static final Path STATISTICS_PATH = Paths.get(new File(".").getAbsolutePath(), "etc", "Statistics");
-
-    private Persistence persistence;
+    private StatisticsDatabaseHandler databaseHandler;
 
     private MessageStatisticCollector messageStatisticCollector;
 
-    private Logger logger = LoggerFactory.getLogger(Quotes.class);
-
-    @Override
-    public Authority[] getRequiredAuthority() {
-        return new Authority[0];
-    }
+    private Logger logger = LoggerFactory.getLogger(Statistics.class);
 
     @Override
     public String getDocumentation() {
@@ -44,13 +40,7 @@ public class Statistics implements Module, AuthorityRequiring, PersistentModule,
 
     @Override
     public void setup(CarlBot carlbot) {
-        // Get the persistence module.
-        persistence = (Persistence) carlbot.getModule(Persistence.class);
-
-        if (persistence == null) {
-            logger.error("Persistence module is not loaded.");
-            carlbot.crash();
-        }
+        databaseHandler = new StatisticsDatabaseHandler(carlbot);
 
         messageStatisticCollector = new MessageStatisticCollector();
         // TODO: Start tracking guilds that want their data to be tracked.
@@ -60,6 +50,77 @@ public class Statistics implements Module, AuthorityRequiring, PersistentModule,
 
     @Override
     public Command[] getCommands(CarlBot carlbot) {
-        return new Command[0];
+        return new Command[] {new StatisticsCommand(carlbot)};
+    }
+
+    private class ToggleStatisticsCommand implements  Command, AuthorityRequiring, Documented {
+
+        @Override
+        public String getCallsign() {
+            return "toggle";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Statistics.this;
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new ToggleStatistics() };
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Use this command to enable/disable this bot to collect data about your server.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "toggle";
+        }
+    }
+
+    private class StatisticsCommand implements Command, Documented, CommandSet {
+
+        private CommandHandler commands;
+
+        StatisticsCommand(CarlBot carlbot) {
+            commands = new CommandHandler(carlbot);
+        }
+
+        @Override
+        public String getCallsign() {
+            return "stats";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) {
+            commands.runCommand(event, rawString, tokens);
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Statistics.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "This module allows access the statistics of your server, and toggle collection of data in your server.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "stats";
+        }
+
+        public Collection<Command> getCommands() {
+            return commands.getCommands();
+        }
     }
 }

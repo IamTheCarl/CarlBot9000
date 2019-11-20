@@ -2,6 +2,7 @@ package net.artifactgaming.carlbot.modules.statistics;
 
 import net.artifactgaming.carlbot.listeners.MessageReader;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import sun.security.util.Debug;
 
 import java.util.HashSet;
 
@@ -23,7 +24,7 @@ public class MessageStatisticCollector implements MessageReader {
         }
 
         if (isTrackingGuild(event.getGuild().getId())){
-
+            event.getTextChannel().sendMessage("OK").queue(); // DEBUG!!!
         }
     }
 
