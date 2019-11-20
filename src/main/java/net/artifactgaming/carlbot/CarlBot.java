@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot;
 
+import net.artifactgaming.carlbot.listeners.OnGuildMember;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.listeners.MessageReader;
@@ -15,6 +16,7 @@ import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.ReadyEvent;
+import net.dv8tion.jda.core.events.guild.member.*;
 import net.dv8tion.jda.core.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
@@ -43,8 +45,10 @@ public class CarlBot extends ListenerAdapter implements Runnable {
     private HashMap<Class, Module> moduleLookup = new HashMap<>();
 
     private ArrayList<MessageReader> messageReaders = new ArrayList<>();
+
     private ArrayList<OnMessageReaction> onMessageReactionListeners = new ArrayList<>();
     private ArrayList<MessageReader> onMessageReceivedListeners = new ArrayList<>();
+    private ArrayList<OnGuildMember> onGuildMemberListeners = new ArrayList<>();
 
     ArrayList<CommandPermissionChecker> permissionCheckers = new ArrayList<>();
 
@@ -84,6 +88,10 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
     public static void addOnCarlbotReadyListener(OnCarlBotReady onCarlBotReady){
         onCarlBotReadyList.add(onCarlBotReady);
+    }
+
+    public void addOnGuildMemberListener(OnGuildMember onGuildMember){
+        onGuildMemberListeners.add(onGuildMember);
     }
 
     public void addOnMessageReactionListener(OnMessageReaction onMessageReaction){
@@ -229,6 +237,41 @@ public class CarlBot extends ListenerAdapter implements Runnable {
     public void onMessageReactionRemoveAll(MessageReactionRemoveAllEvent event) {
         for (OnMessageReaction onMessageReactionListener: onMessageReactionListeners){
             onMessageReactionListener.onMessageReactionRemoveAll(event);
+        }
+    }
+
+    @Override
+    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+        for (OnGuildMember listener: onGuildMemberListeners) {
+            listener.onGuildMemberJoin(event);
+        }
+    }
+
+    @Override
+    public void onGuildMemberLeave(GuildMemberLeaveEvent event) {
+        for (OnGuildMember listener: onGuildMemberListeners) {
+            listener.onGuildMemberLeave(event);
+        }
+    }
+
+    @Override
+    public void onGuildMemberRoleAdd(GuildMemberRoleAddEvent event) {
+        for (OnGuildMember listener: onGuildMemberListeners) {
+            listener.onGuildMemberRoleAdd(event);
+        }
+    }
+
+    @Override
+    public void onGuildMemberRoleRemove(GuildMemberRoleRemoveEvent event) {
+        for (OnGuildMember listener: onGuildMemberListeners) {
+            listener.onGuildMemberRoleRemove(event);
+        }
+    }
+
+    @Override
+    public void onGuildMemberNickChange(GuildMemberNickChangeEvent event) {
+        for (OnGuildMember listener: onGuildMemberListeners) {
+            listener.onGuildMemberNickChange(event);
         }
     }
 

@@ -7,6 +7,8 @@ import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import java.util.List;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 
 public class Utils {
 
@@ -38,6 +40,41 @@ public class Utils {
         message = message.replace("@here","@.here");
 
         return message;
+    }
+
+    /**
+     * Fetches the first occurrence of an integer number from the list
+     * @param args The list of strings
+     * @param defaultValue Returns this if none is found
+     * @return
+     */
+    public static int getFirstOrDefaultNumber(List<String> args, int defaultValue){
+
+        for (String item: args) {
+            ObjectResult<Integer> getIntegerFromStringResult = Utils.tryGetInteger(item);
+
+            if (getIntegerFromStringResult.getResult()){
+                return getIntegerFromStringResult.getObject();
+            }
+        }
+
+        return defaultValue;
+    }
+
+    // Like above, but you can specify a condition for the number.
+    public static int getFirstOrDefaultNumber(List<String> args, int defaultValue, IntPredicate condition){
+
+        for (String item: args) {
+            ObjectResult<Integer> getIntegerFromStringResult = Utils.tryGetInteger(item);
+
+            if (getIntegerFromStringResult.getResult()){
+                if (condition.test(getIntegerFromStringResult.getObject())) {
+                    return getIntegerFromStringResult.getObject();
+                }
+            }
+        }
+
+        return defaultValue;
     }
 
     /**
