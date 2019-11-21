@@ -8,6 +8,7 @@ import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
+import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.SettingsDatabaseHandler;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.StatisticsDatabaseHandler;
 import net.artifactgaming.carlbot.modules.statistics.authority.ToggleStatistics;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -20,11 +21,15 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 
-public class Statistics implements Module, Documented {
+public class Statistics implements Module, Documented, PersistentModule {
 
-    private StatisticsDatabaseHandler databaseHandler;
+    private SettingsDatabaseHandler settingsDatabaseHandler;
+
+    private StatisticsDatabaseHandler statisticsDatabaseHandler;
 
     private MessageStatisticCollector messageStatisticCollector;
+
+    private Persistence persistence;
 
     private Logger logger = LoggerFactory.getLogger(Statistics.class);
 
@@ -40,9 +45,18 @@ public class Statistics implements Module, Documented {
 
     @Override
     public void setup(CarlBot carlbot) {
-        databaseHandler = new StatisticsDatabaseHandler(carlbot);
+        // Get the persistence module.
+        persistence = (Persistence) carlbot.getModule(Persistence.class);
 
-        messageStatisticCollector = new MessageStatisticCollector(databaseHandler);
+        if (persistence == null) {
+            logger.error("Persistence module is not loaded.");
+            carlbot.crash();
+        }
+
+        settingsDatabaseHandler = new SettingsDatabaseHandler(persistence, this);
+        statisticsDatabaseHandler = new StatisticsDatabaseHandler(persistence, this);
+
+        messageStatisticCollector = new MessageStatisticCollector(settingsDatabaseHandler, statisticsDatabaseHandler);
 
         carlbot.addOnMessageReceivedListener(messageStatisticCollector);
     }
@@ -66,10 +80,10 @@ public class Statistics implements Module, Documented {
                 return;
             }
 
-            StatisticsSettings statisticsSettings = databaseHandler.getStatisticSettingsInGuild(event.getGuild());
+            StatisticsSettings statisticsSettings = settingsDatabaseHandler.getStatisticSettingsInGuild(event.getGuild());
             statisticsSettings.setEnabled(!statisticsSettings.isEnabled());
 
-            databaseHandler.updateStatisticSettingsInGuild(event.getGuild(), statisticsSettings);
+            settingsDatabaseHandler.updateStatisticSettingsInGuild(event.getGuild(), statisticsSettings);
 
             if (statisticsSettings.isEnabled()){
                 event.getTextChannel().sendMessage("Statistic tracking for this server is now enabled!").queue();

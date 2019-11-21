@@ -1,8 +1,10 @@
 package net.artifactgaming.carlbot.modules.statistics;
 
 import net.artifactgaming.carlbot.listeners.MessageReader;
+import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.SettingsDatabaseHandler;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.StatisticsDatabaseHandler;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.h2.engine.Setting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,10 +14,13 @@ public class MessageStatisticCollector implements MessageReader {
 
     private Logger logger = LoggerFactory.getLogger(Statistics.class);
 
-    private StatisticsDatabaseHandler databaseHandler;
+    private SettingsDatabaseHandler settingsDatabaseHandler;
 
-    MessageStatisticCollector(StatisticsDatabaseHandler statisticsDatabaseHandler){
-        databaseHandler = statisticsDatabaseHandler;
+    private StatisticsDatabaseHandler statisticsDatabaseHandler;
+
+    MessageStatisticCollector(SettingsDatabaseHandler _settingsDatabaseHandler, StatisticsDatabaseHandler _statisticsDatabaseHandler){
+        settingsDatabaseHandler = _settingsDatabaseHandler;
+        statisticsDatabaseHandler = _statisticsDatabaseHandler;
     }
 
     @Override
@@ -24,7 +29,7 @@ public class MessageStatisticCollector implements MessageReader {
             return;
         }
         try {
-            StatisticsSettings statsSettings = databaseHandler.getStatisticSettingsInGuild(event.getGuild());
+            StatisticsSettings statsSettings = settingsDatabaseHandler.getStatisticSettingsInGuild(event.getGuild());
 
             if (statsSettings.isEnabled()){
                 event.getTextChannel().sendMessage("OK").queue(); // DEBUG!!!
