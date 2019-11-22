@@ -98,4 +98,12 @@ public class WeeklyChannelStatistics {
     }
 
     ///endregion
+
+    public void incrementNoOfMessagesSent(){
+        ++noOfMessagesSent;
+    }
+
+    public void incrementNoOfMessagesSentWithImage(){
+        ++noOfMessagesWithImage;
+    }
 }

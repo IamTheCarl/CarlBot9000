@@ -186,4 +186,20 @@ public class Utils {
 
         return discordId;
     }
+
+    public static boolean messageContainsImage(Message message){
+        List<Message.Attachment> messageAttachments = message.getAttachments();
+
+        if (messageAttachments.size() <= 0){
+            return false;
+        }
+
+        for (Message.Attachment attachment: messageAttachments) {
+            if (attachment.isImage()){
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
