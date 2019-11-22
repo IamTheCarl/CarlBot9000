@@ -141,7 +141,7 @@ public class StatisticsDatabaseHandler {
                         .pushValue(WeeklyChannelStatistics.CHANNEL_ID + " varchar")
                         .pushValue(WeeklyChannelStatistics.CHANNEL_NAME + " varchar")
                         .pushValue(WeeklyChannelStatistics.NO_OF_MESSAGES_SENT + " int")
-                        .pushValue(WeeklyChannelStatistics.NO_OF_MESSAGES_WITH_IMAGE + "int")
+                        .pushValue(WeeklyChannelStatistics.NO_OF_MESSAGES_WITH_IMAGE + " int")
                         .pushValue(WeeklyChannelStatistics.TRACKED_DATE + " varchar")
                         .execute();
             }
