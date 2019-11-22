@@ -22,8 +22,17 @@ public class StatisticsDatabaseHandler {
 
     private PersistentModule persistentModuleRef;
 
+    private WeeklyDatabaseHandler weeklyDatabaseHandler;
+
     public StatisticsDatabaseHandler(Persistence _persistenceRef, PersistentModule _persistentModuleRef) {
         persistenceRef = _persistenceRef;
         persistentModuleRef = _persistentModuleRef;
+
+        weeklyDatabaseHandler = new WeeklyDatabaseHandler();
+    }
+
+    private class WeeklyDatabaseHandler {
+
+
     }
 }
