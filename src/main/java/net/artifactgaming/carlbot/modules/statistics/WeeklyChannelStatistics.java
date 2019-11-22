@@ -4,6 +4,8 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class WeeklyChannelStatistics {
+    public final static String DATE_FORMAT_PATTERN = "MM/dd/yyyy HH:mm:ss";
+
     ///region SQL Column Names
 
     public final static String CHANNEL_NAME = "CHANNEL_NAME";

@@ -32,7 +32,7 @@ public class MessageStatisticCollector implements MessageReader {
             StatisticsSettings statsSettings = settingsDatabaseHandler.getStatisticSettingsInGuild(event.getGuild());
 
             if (statsSettings.isEnabled()){
-                event.getTextChannel().sendMessage("OK").queue(); // DEBUG!!!
+
             }
 
         } catch (SQLException e){
