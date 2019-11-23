@@ -1,16 +1,12 @@
 package net.artifactgaming.carlbot.modules.statistics;
 
+import java.nio.channels.Channel;
 import java.util.Calendar;
 import java.util.Date;
 
-public class WeeklyChannelStatistics {
-    public final static String DATE_FORMAT_PATTERN = "MM/dd/yyyy HH:mm:ss";
+public class WeeklyChannelStatistics extends ChannelStatistics {
 
     ///region SQL Column Names
-
-    public final static String CHANNEL_NAME = "CHANNEL_NAME";
-
-    public final static String CHANNEL_ID = "CHANNEL_ID";
 
     public final static String NO_OF_MESSAGES_SENT = "NO_OF_MESSAGES_SENT";
 
@@ -18,10 +14,6 @@ public class WeeklyChannelStatistics {
 
     public final static String TRACKED_DATE = "TRACKED_DATE";
     ///endregion
-
-    private String channelID;
-
-    private String channelName;
 
     /**
      * Total number of messages sent into this channel.
@@ -40,38 +32,20 @@ public class WeeklyChannelStatistics {
     private Date trackedDate;
 
     public WeeklyChannelStatistics(String _channelID, String _channelName){
-        channelID = _channelID;
-        channelName = _channelName;
+        super(_channelID, _channelName);
         noOfMessagesSent = 0;
         noOfMessagesWithImage = 0;
         trackedDate = Calendar.getInstance().getTime();
     }
 
     public WeeklyChannelStatistics(String _channelID, String _channelName, int _noOfMessagesSent, int _noOfMessagesWithImage, Date _trackedDate) {
-        channelID = _channelID;
-        channelName = _channelName;
+        super(_channelID, _channelName);
         noOfMessagesSent = _noOfMessagesSent;
         noOfMessagesWithImage = _noOfMessagesWithImage;
         trackedDate = _trackedDate;
     }
 
     ///region Getter/Setter
-
-    public String getChannelID() {
-        return channelID;
-    }
-
-    public void setChannelID(String channelID) {
-        this.channelID = channelID;
-    }
-
-    public String getChannelName() {
-        return channelName;
-    }
-
-    public void setChannelName(String channelName) {
-        this.channelName = channelName;
-    }
 
     public int getNoOfMessagesSent() {
         return noOfMessagesSent;

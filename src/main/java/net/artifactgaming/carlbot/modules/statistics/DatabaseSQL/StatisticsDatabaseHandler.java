@@ -1,9 +1,11 @@
 package net.artifactgaming.carlbot.modules.statistics.DatabaseSQL;
 
 import net.artifactgaming.carlbot.CarlBot;
+import net.artifactgaming.carlbot.Utils;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
+import net.artifactgaming.carlbot.modules.statistics.ChannelStatistics;
 import net.artifactgaming.carlbot.modules.statistics.Statistics;
 import net.artifactgaming.carlbot.modules.statistics.StatisticsSettings;
 import net.artifactgaming.carlbot.modules.statistics.WeeklyChannelStatistics;
@@ -25,12 +27,6 @@ import java.util.List;
 
 public class StatisticsDatabaseHandler {
 
-    ///region Table names
-
-    private static final String WEEKLY_STATISTICS_TABLE = "WEEKLY_STATISTICS";
-
-    ///endregion
-
     private Logger logger = LoggerFactory.getLogger(Statistics.class);
 
     private Persistence persistenceRef;
@@ -38,19 +34,27 @@ public class StatisticsDatabaseHandler {
     private PersistentModule persistentModuleRef;
 
     private WeeklyDatabaseHandler weeklyDatabaseHandler;
+    private LifetimeDatabaseHandler lifetimeDatabaseHandler;
 
     public StatisticsDatabaseHandler(Persistence _persistenceRef, PersistentModule _persistentModuleRef) {
         persistenceRef = _persistenceRef;
         persistentModuleRef = _persistentModuleRef;
 
         weeklyDatabaseHandler = new WeeklyDatabaseHandler();
+        lifetimeDatabaseHandler = new LifetimeDatabaseHandler();
     }
 
     private class LifetimeDatabaseHandler {
-
+        ///region Table names
+        private static final String LIFETIME_STATISTICS_TABLE = "LIFETIME_STATISTICS";
+        ///endregion
     }
 
     private class WeeklyDatabaseHandler {
+
+        ///region Table names
+        private static final String WEEKLY_STATISTICS_TABLE = "WEEKLY_STATISTICS";
+        ///endregion
 
         private List<WeeklyChannelStatistics> getWeeklyGuildStatistics(Guild guild) throws SQLException, ParseException {
             ArrayList<WeeklyChannelStatistics> weeklyChannelStatisticsList = new ArrayList<>();
@@ -66,7 +70,7 @@ public class StatisticsDatabaseHandler {
                 String trackedDateString = result.getString(WeeklyChannelStatistics.TRACKED_DATE);
 
                 // Convert the date string as a 'Date' type.
-                DateFormat dateFormatter = new SimpleDateFormat(WeeklyChannelStatistics.DATE_FORMAT_PATTERN);
+                DateFormat dateFormatter = new SimpleDateFormat(Utils.GLOBAL_DATE_FORMAT_PATTERN);
                 Date trackedDate = dateFormatter.parse(trackedDateString);
 
                 WeeklyChannelStatistics weeklyChannelStatistics = new WeeklyChannelStatistics(channelID, channelName, noOfMessagesSent, noOfMessagesSentWithImage, trackedDate);
@@ -91,7 +95,7 @@ public class StatisticsDatabaseHandler {
                 String trackedDateString = result.getString(WeeklyChannelStatistics.TRACKED_DATE);
 
                 // Convert the date string as a 'Date' type.
-                DateFormat dateFormatter = new SimpleDateFormat(WeeklyChannelStatistics.DATE_FORMAT_PATTERN);
+                DateFormat dateFormatter = new SimpleDateFormat(Utils.GLOBAL_DATE_FORMAT_PATTERN);
                 Date trackedDate = dateFormatter.parse(trackedDateString);
 
                 weeklyChannelStatistics = new WeeklyChannelStatistics(channelID, channelName, noOfMessagesSent, noOfMessagesSentWithImage, trackedDate);
@@ -107,7 +111,7 @@ public class StatisticsDatabaseHandler {
         private void updateWeeklyChannelStatistics(Guild guild, TextChannel channel, WeeklyChannelStatistics weeklyChannelStatistics) throws SQLException {
             Table weeklyStatisticsTable = getWeeklyStatisticsTableInGuild(guild);
 
-            DateFormat dateFormatter = new SimpleDateFormat(WeeklyChannelStatistics.DATE_FORMAT_PATTERN);
+            DateFormat dateFormatter = new SimpleDateFormat(Utils.GLOBAL_DATE_FORMAT_PATTERN);
             String dateAsString = dateFormatter.format(weeklyChannelStatistics.getTrackedDate());
 
             weeklyStatisticsTable.update()
@@ -123,7 +127,7 @@ public class StatisticsDatabaseHandler {
             Table weeklyStatisticsTable = getWeeklyStatisticsTableInGuild(guild);
 
             Date currentDate = Calendar.getInstance().getTime();
-            DateFormat dateFormatter = new SimpleDateFormat(WeeklyChannelStatistics.DATE_FORMAT_PATTERN);
+            DateFormat dateFormatter = new SimpleDateFormat(Utils.GLOBAL_DATE_FORMAT_PATTERN);
 
             weeklyStatisticsTable.insert()
                     .set(WeeklyChannelStatistics.CHANNEL_ID, channel.getId())

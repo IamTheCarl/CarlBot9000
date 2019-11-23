@@ -1,9 +1,12 @@
 package net.artifactgaming.carlbot.modules.statistics;
 
-public class LifetimeChannelStatistics {
-    private String channelID;
+public class LifetimeChannelStatistics extends ChannelStatistics {
+    ///region SQL Column Names
 
-    private String channelName;
+    public final static String PERCENT_OF_MESSAGES_SENT = "PERCENT_OF_MESSAGES_SENT";
+
+    public final static String PERCENT_OF_MESSAGES_WITH_IMAGE = "PERCENT_OF_MESSAGES_WITH_IMAGE";
+    ///endregion
 
     /**
      * How many percent of messages were sent in this channel in the entire server.
@@ -16,36 +19,18 @@ public class LifetimeChannelStatistics {
     private double percentageOfMessagesContainImages;
 
     public LifetimeChannelStatistics(String _channelID, String _channelName, double _percentageOfTotalMessagesSent, double _percentageOfMessagesContainImages) {
-        channelID = _channelID;
-        channelName = _channelName;
+        super(_channelID,_channelName);
         percentageOfTotalMessagesSent = _percentageOfTotalMessagesSent;
         percentageOfMessagesContainImages = _percentageOfMessagesContainImages;
     }
 
     public LifetimeChannelStatistics(String _channelID, String _channelName) {
-        channelID = _channelID;
-        channelName = _channelName;
+        super(_channelID,_channelName);
         percentageOfTotalMessagesSent = 0;
         percentageOfMessagesContainImages = 0;
     }
 
     ///region Getter/Setter
-    public String getChannelID() {
-        return channelID;
-    }
-
-    public void setChannelID(String channelID) {
-        this.channelID = channelID;
-    }
-
-    public String getChannelName() {
-        return channelName;
-    }
-
-    public void setChannelName(String channelName) {
-        this.channelName = channelName;
-    }
-
     public double getPercentageOfTotalMessagesSent() {
         return percentageOfTotalMessagesSent;
     }

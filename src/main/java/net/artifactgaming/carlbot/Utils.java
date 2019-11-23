@@ -12,6 +12,11 @@ import java.util.function.Predicate;
 
 public class Utils {
 
+    /**
+     * Use this date format pattern when converting from/to Date with strings.
+     */
+    public final static String GLOBAL_DATE_FORMAT_PATTERN = "MM/dd/yyyy HH:mm:ss";
+
     public final static String STRING_EMPTY = "";
 
     public final static String CALLSIGN = "$>";
