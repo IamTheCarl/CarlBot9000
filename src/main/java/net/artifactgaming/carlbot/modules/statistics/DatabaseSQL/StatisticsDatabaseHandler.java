@@ -5,10 +5,7 @@ import net.artifactgaming.carlbot.Utils;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
-import net.artifactgaming.carlbot.modules.statistics.ChannelStatistics;
-import net.artifactgaming.carlbot.modules.statistics.Statistics;
-import net.artifactgaming.carlbot.modules.statistics.StatisticsSettings;
-import net.artifactgaming.carlbot.modules.statistics.WeeklyChannelStatistics;
+import net.artifactgaming.carlbot.modules.statistics.*;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Invite;
 import net.dv8tion.jda.core.entities.TextChannel;
@@ -48,6 +45,43 @@ public class StatisticsDatabaseHandler {
         ///region Table names
         private static final String LIFETIME_STATISTICS_TABLE = "LIFETIME_STATISTICS";
         ///endregion
+
+        private List<LifetimeChannelStatistics> getLifetimeGuildStatistics(Guild guild) throws SQLException {
+            ArrayList<LifetimeChannelStatistics> lifetimeChannelStatisticsList = new ArrayList<>();
+            Table lifetimeStatisticsTable = getLifetimeStatisticsTableInGuild(guild);
+
+            ResultSet result = lifetimeStatisticsTable.select().execute();
+
+            while (result.next()){
+                String channelID = result.getString(LifetimeChannelStatistics.CHANNEL_ID);
+                String channelName = result.getString(LifetimeChannelStatistics.CHANNEL_ID);
+                double percentageMessagesSent = result.getDouble(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_SENT);
+                double percentageMessageSentContainImage = result.getDouble(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_WITH_IMAGE);
+
+                LifetimeChannelStatistics lifetimeChannelStatistics = new LifetimeChannelStatistics(channelID, channelName, percentageMessagesSent, percentageMessageSentContainImage);
+                lifetimeChannelStatisticsList.add(lifetimeChannelStatistics);
+            }
+
+            return lifetimeChannelStatisticsList;
+        }
+
+        private Table getLifetimeStatisticsTableInGuild(Guild guild) throws SQLException {
+            Table table = persistenceRef.getGuildTable(guild, persistentModuleRef);
+            Table lifetimeStatisticsTable = new Table(table, LIFETIME_STATISTICS_TABLE);
+
+            if (!lifetimeStatisticsTable.exists()) {
+                lifetimeStatisticsTable.create();
+
+                lifetimeStatisticsTable.alter().add()
+                        .pushValue(LifetimeChannelStatistics.CHANNEL_ID + " varchar")
+                        .pushValue(LifetimeChannelStatistics.CHANNEL_NAME + " varchar")
+                        .pushValue(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_SENT + " float")
+                        .pushValue(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_WITH_IMAGE + " float")
+                        .execute();
+            }
+
+            return lifetimeStatisticsTable;
+        }
     }
 
     private class WeeklyDatabaseHandler {

@@ -57,6 +57,10 @@ public class Statistics implements Module, Documented, PersistentModule {
             carlbot.crash();
         }
 
+        // TODO: Check if Weekly statistics needs resetting.
+
+        // TODO: Setup a repeating timer to constantly check if weekly statistics need resetting.
+
         settingsDatabaseHandler = new SettingsDatabaseHandler(persistence, this);
         statisticsDatabaseHandler = new StatisticsDatabaseHandler(persistence, this);
 
