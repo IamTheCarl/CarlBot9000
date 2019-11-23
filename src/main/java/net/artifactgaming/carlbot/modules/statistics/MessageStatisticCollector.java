@@ -4,6 +4,7 @@ import net.artifactgaming.carlbot.Utils;
 import net.artifactgaming.carlbot.listeners.MessageReader;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.SettingsDatabaseHandler;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.StatisticsDatabaseHandler;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -34,7 +35,7 @@ public class MessageStatisticCollector implements MessageReader {
             return;
         }
 
-        if (channelHasStatisticsEnabled(event.getTextChannel())){
+        if (guildHasStatisticsEnabled(event.getGuild())){
             updateChannelStatisticsWithNewMessage(event.getTextChannel(), event.getMessage());
         }
     }
@@ -60,9 +61,9 @@ public class MessageStatisticCollector implements MessageReader {
         }
     }
 
-    private boolean channelHasStatisticsEnabled(TextChannel channel){
+    private boolean guildHasStatisticsEnabled(Guild guild){
         try {
-            StatisticsSettings statsSettings = settingsDatabaseHandler.getStatisticSettingsInGuild(channel.getGuild());
+            StatisticsSettings statsSettings = settingsDatabaseHandler.getStatisticSettingsInGuild(guild);
             return statsSettings.isEnabled();
         } catch (SQLException e){
             logger.error("Error trying to determine if a channel is tracked by statistics :: " + e.getMessage());
