@@ -99,6 +99,12 @@ public class Statistics implements Module, Documented, PersistentModule {
         private String getReadableStatisticsResult(List<WeeklyChannelStatistics> weeklyChannelStatisticsList){
             long totalMessagesSent = getTotalMessagesSent(weeklyChannelStatisticsList);
 
+            if (totalMessagesSent <= 0){
+                return "No messages have been sent in any channels since I started tracking for this week!"
+                        + Utils.NEWLINE
+                        + "**NOTE**: Channels that I do not have access to is not tracked!";
+            }
+
             StringBuilder statisticsResult = new StringBuilder();
             statisticsResult.append("```md" + Utils.NEWLINE);
 
@@ -110,7 +116,10 @@ public class Statistics implements Module, Documented, PersistentModule {
 
                 statisticsResult.append(weeklyChannelStatistics.getNoOfMessagesSent()).append(" messages were sent.").append(Utils.NEWLINE);
 
-                statisticsResult.append(weeklyChannelStatistics.getNoOfMessagesWithImage()).append(" of those messages contained images.").append(Utils.NEWLINE);
+                if (weeklyChannelStatistics.getNoOfMessagesSent() > 0) {
+                    double percentageOfMessagesWereImage = ((double) weeklyChannelStatistics.getNoOfMessagesWithImage() / (double) weeklyChannelStatistics.getNoOfMessagesSent()) * 100;
+                    statisticsResult.append("(").append(percentageOfMessagesWereImage).append("%) ").append(weeklyChannelStatistics.getNoOfMessagesWithImage()).append(" of those messages contained images.").append(Utils.NEWLINE);
+                }
             }
 
             statisticsResult.append("```" + Utils.NEWLINE);

@@ -45,9 +45,9 @@ public class MessageStatisticCollector implements MessageReader {
             WeeklyChannelStatistics thisChannelWeeklyStatistics = statisticsDatabaseHandler.getWeeklyChannelStatistics(channel.getGuild(), channel);
 
             thisChannelWeeklyStatistics.setChannelID(channel.getId());
+            thisChannelWeeklyStatistics.setChannelName(channel.getName());
 
             thisChannelWeeklyStatistics.incrementNoOfMessagesSent();
-
             if (Utils.messageContainsImage(newMessage)){
                 thisChannelWeeklyStatistics.incrementNoOfMessagesSentWithImage();
             }

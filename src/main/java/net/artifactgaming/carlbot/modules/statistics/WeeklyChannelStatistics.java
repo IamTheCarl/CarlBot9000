@@ -99,11 +99,11 @@ public class WeeklyChannelStatistics {
 
     ///endregion
 
-    public void incrementNoOfMessagesSent(){
+    void incrementNoOfMessagesSent(){
         ++noOfMessagesSent;
     }
 
-    public void incrementNoOfMessagesSentWithImage(){
+    void incrementNoOfMessagesSentWithImage(){
         ++noOfMessagesWithImage;
     }
 }

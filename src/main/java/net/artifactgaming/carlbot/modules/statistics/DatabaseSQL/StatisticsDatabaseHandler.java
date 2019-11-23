@@ -46,6 +46,10 @@ public class StatisticsDatabaseHandler {
         weeklyDatabaseHandler = new WeeklyDatabaseHandler();
     }
 
+    private class LifetimeDatabaseHandler {
+
+    }
+
     private class WeeklyDatabaseHandler {
 
         private List<WeeklyChannelStatistics> getWeeklyGuildStatistics(Guild guild) throws SQLException, ParseException {
