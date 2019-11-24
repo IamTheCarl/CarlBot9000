@@ -2,6 +2,7 @@ package net.artifactgaming.carlbot.modules.schedule;
 
 import net.artifactgaming.carlbot.*;
 import net.artifactgaming.carlbot.Module;
+import net.artifactgaming.carlbot.listeners.OnCarlBotReady;
 import net.artifactgaming.carlbot.modules.authority.Authority;
 import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
@@ -19,8 +20,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public class Schedules implements Module, AuthorityRequiring, PersistentModule, Documented {
 
@@ -459,7 +458,7 @@ public class Schedules implements Module, AuthorityRequiring, PersistentModule, 
     private class OnCarlBotReadyEvent implements OnCarlBotReady {
 
         @Override
-        public void OnCarlBotReady(ReadyEvent event) {
+        public void onCarlBotReady(ReadyEvent event) {
             schedules = new ArrayList<Schedule>();
 
             List<Guild> guilds = event.getJDA().getGuilds();
