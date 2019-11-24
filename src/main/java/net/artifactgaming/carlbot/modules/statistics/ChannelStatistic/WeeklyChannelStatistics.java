@@ -1,4 +1,4 @@
-package net.artifactgaming.carlbot.modules.statistics.ChannelStatistics;
+package net.artifactgaming.carlbot.modules.statistics.ChannelStatistic;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -27,6 +27,7 @@ public class WeeklyChannelStatistics extends ChannelStatistics {
     /**
      * At which date did this channel began it's weekly tracking?
      * (So that we can know when to reset the week's statistics)
+     * TODO: Use 'LocalDate' instead; Much better.
      */
     private Date trackedDate;
 
@@ -72,6 +73,8 @@ public class WeeklyChannelStatistics extends ChannelStatistics {
 
     ///endregion
 
+    //region Utils
+
     public void incrementNoOfMessagesSent(){
         ++noOfMessagesSent;
     }
@@ -79,4 +82,12 @@ public class WeeklyChannelStatistics extends ChannelStatistics {
     public void incrementNoOfMessagesSentWithImage(){
         ++noOfMessagesWithImage;
     }
+
+    public void reset(){
+        noOfMessagesSent = 0;
+        noOfMessagesWithImage = 0;
+        trackedDate = Calendar.getInstance().getTime();
+    }
+
+    //endregion
 }

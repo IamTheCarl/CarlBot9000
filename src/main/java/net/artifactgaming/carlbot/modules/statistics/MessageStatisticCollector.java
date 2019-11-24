@@ -2,7 +2,7 @@ package net.artifactgaming.carlbot.modules.statistics;
 
 import net.artifactgaming.carlbot.Utils;
 import net.artifactgaming.carlbot.listeners.MessageReader;
-import net.artifactgaming.carlbot.modules.statistics.ChannelStatistics.WeeklyChannelStatistics;
+import net.artifactgaming.carlbot.modules.statistics.ChannelStatistic.WeeklyChannelStatistics;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.SettingsDatabaseHandler;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.StatisticsDatabaseHandler;
 import net.dv8tion.jda.core.entities.Guild;
@@ -51,7 +51,7 @@ public class MessageStatisticCollector implements MessageReader {
                 thisChannelWeeklyStatistics.incrementNoOfMessagesSentWithImage();
             }
 
-            statisticsDatabaseHandler.updateWeeklyChannelStatistics(channel.getGuild(), channel, thisChannelWeeklyStatistics);
+            statisticsDatabaseHandler.updateWeeklyChannelStatistics(channel.getGuild(), thisChannelWeeklyStatistics);
 
         } catch (SQLException e){
             logger.error("Error trying update data on a channel statistics :: " + e.getMessage());

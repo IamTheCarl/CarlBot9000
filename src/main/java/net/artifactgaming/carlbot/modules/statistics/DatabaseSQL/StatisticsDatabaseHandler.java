@@ -5,10 +5,11 @@ import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
 import net.artifactgaming.carlbot.modules.statistics.*;
-import net.artifactgaming.carlbot.modules.statistics.ChannelStatistics.LifetimeChannelStatistics;
-import net.artifactgaming.carlbot.modules.statistics.ChannelStatistics.WeeklyChannelStatistics;
+import net.artifactgaming.carlbot.modules.statistics.ChannelStatistic.LifetimeChannelStatistics;
+import net.artifactgaming.carlbot.modules.statistics.ChannelStatistic.WeeklyChannelStatistics;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.TextChannel;
+import org.graalvm.compiler.api.replacements.Snippet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +90,7 @@ public class StatisticsDatabaseHandler {
             return lifetimeChannelStatistics;
         }
 
-        private void updateLifetimeChannelStatistics(Guild guild, TextChannel channel, LifetimeChannelStatistics lifetimeChannelStatistics) throws SQLException {
+        private void updateLifetimeChannelStatistics(Guild guild, LifetimeChannelStatistics lifetimeChannelStatistics) throws SQLException {
             Table lifetimeStatisticsTable = getLifetimeStatisticsTableInGuild(guild);
 
             lifetimeStatisticsTable.update()
@@ -111,6 +112,17 @@ public class StatisticsDatabaseHandler {
                     .execute();
         }
 
+        private void insertNewChannelStatisticsIntoLifetimeStatisticsTable(Guild guild, LifetimeChannelStatistics lifetimeChannelStatistics) throws SQLException {
+            Table lifetimeStatisticsTable = getLifetimeStatisticsTableInGuild(guild);
+
+            lifetimeStatisticsTable.insert()
+                    .set(LifetimeChannelStatistics.CHANNEL_ID, lifetimeChannelStatistics.getChannelID())
+                    .set(LifetimeChannelStatistics.CHANNEL_NAME, lifetimeChannelStatistics.getChannelName())
+                    .set(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_SENT, String.valueOf(lifetimeChannelStatistics.getPercentageOfTotalMessagesSent()))
+                    .set(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_WITH_IMAGE, String.valueOf(lifetimeChannelStatistics.getPercentageOfMessagesContainImages()))
+                    .execute();
+        }
+
         private Table getLifetimeStatisticsTableInGuild(Guild guild) throws SQLException {
             Table table = persistenceRef.getGuildTable(guild, persistentModuleRef);
             Table lifetimeStatisticsTable = new Table(table, LIFETIME_STATISTICS_TABLE);
@@ -127,6 +139,14 @@ public class StatisticsDatabaseHandler {
             }
 
             return lifetimeStatisticsTable;
+        }
+
+        private void deleteLifetimeStatisticsChannel(Guild guild, String channelID) throws SQLException {
+            Table table = persistenceRef.getGuildTable(guild, persistentModuleRef);
+
+            table.delete()
+                    .where(LifetimeChannelStatistics.CHANNEL_ID, "=", channelID)
+                    .execute();
         }
     }
 
@@ -188,7 +208,7 @@ public class StatisticsDatabaseHandler {
             return weeklyChannelStatistics;
         }
 
-        private void updateWeeklyChannelStatistics(Guild guild, TextChannel channel, WeeklyChannelStatistics weeklyChannelStatistics) throws SQLException {
+        private void updateWeeklyChannelStatistics(Guild guild, WeeklyChannelStatistics weeklyChannelStatistics) throws SQLException {
             Table weeklyStatisticsTable = getWeeklyStatisticsTableInGuild(guild);
 
             DateFormat dateFormatter = new SimpleDateFormat(Utils.GLOBAL_DATE_FORMAT_PATTERN);
@@ -236,29 +256,49 @@ public class StatisticsDatabaseHandler {
 
             return weeklyStatisticsTable;
         }
+
+        private void deleteWeeklyStatisticsChannel(Guild guild, String channelID) throws SQLException {
+            Table table = persistenceRef.getGuildTable(guild, persistentModuleRef);
+
+            table.delete()
+                    .where(WeeklyChannelStatistics.CHANNEL_ID, "=", channelID)
+                    .execute();
+        }
     }
 
-    public List<WeeklyChannelStatistics> getWeeklyGuildStatistics(Guild guild) throws SQLException, ParseException {
+    public List<WeeklyChannelStatistics> getWeeklyGuildStatistics(@Snippet.NonNullParameter Guild guild) throws SQLException, ParseException {
         return weeklyDatabaseHandler.getWeeklyGuildStatistics(guild);
     }
 
-    public WeeklyChannelStatistics getWeeklyChannelStatistics(Guild guild, TextChannel channel) throws SQLException, ParseException {
+    public WeeklyChannelStatistics getWeeklyChannelStatistics(@Snippet.NonNullParameter Guild guild, @Snippet.NonNullParameter TextChannel channel) throws SQLException, ParseException {
         return weeklyDatabaseHandler.getWeeklyChannelStatistics(guild, channel);
     }
 
-    public void updateWeeklyChannelStatistics(Guild guild, TextChannel channel, WeeklyChannelStatistics weeklyChannelStatistics) throws SQLException {
-        weeklyDatabaseHandler.updateWeeklyChannelStatistics(guild, channel, weeklyChannelStatistics);
+    public void updateWeeklyChannelStatistics(@Snippet.NonNullParameter Guild guild, @Snippet.NonNullParameter WeeklyChannelStatistics weeklyChannelStatistics) throws SQLException {
+        weeklyDatabaseHandler.updateWeeklyChannelStatistics(guild, weeklyChannelStatistics);
     }
 
-    public List<LifetimeChannelStatistics> getLifetimeGuildStatistics(Guild guild) throws SQLException {
+    public void deleteWeeklyChannelStatistics(@Snippet.NonNullParameter Guild guild, @Snippet.NonNullParameter String channelID) throws SQLException {
+        weeklyDatabaseHandler.deleteWeeklyStatisticsChannel(guild, channelID);
+    }
+
+    public List<LifetimeChannelStatistics> getLifetimeGuildStatistics(@Snippet.NonNullParameter Guild guild) throws SQLException {
         return lifetimeDatabaseHandler.getLifetimeGuildStatistics(guild);
     }
 
-    public LifetimeChannelStatistics getLifetimeChannelStatistics(Guild guild, TextChannel channel) throws SQLException {
+    public LifetimeChannelStatistics getLifetimeChannelStatistics(@Snippet.NonNullParameter Guild guild, @Snippet.NonNullParameter TextChannel channel) throws SQLException {
         return lifetimeDatabaseHandler.getLifetimeChannelStatistics(guild, channel);
     }
 
-    public void updateLifetimeChannelStatistics(Guild guild, TextChannel channel, LifetimeChannelStatistics lifetimeChannelStatistics) throws SQLException {
-        lifetimeDatabaseHandler.updateLifetimeChannelStatistics(guild, channel, lifetimeChannelStatistics);
+    public void updateLifetimeChannelStatistics(@Snippet.NonNullParameter Guild guild, @Snippet.NonNullParameter LifetimeChannelStatistics lifetimeChannelStatistics) throws SQLException {
+        lifetimeDatabaseHandler.updateLifetimeChannelStatistics(guild, lifetimeChannelStatistics);
+    }
+
+    public void deleteLifetimeChannelStatistics(@Snippet.NonNullParameter Guild guild, @Snippet.NonNullParameter String channelID) throws SQLException {
+        lifetimeDatabaseHandler.deleteLifetimeStatisticsChannel(guild, channelID);
+    }
+
+    public void insertNewChannelStatisticsIntoLifetimeStatisticsTable(@Snippet.NonNullParameter Guild guild, @Snippet.NonNullParameter LifetimeChannelStatistics lifetimeChannelStatistics) throws SQLException {
+        lifetimeDatabaseHandler.insertNewChannelStatisticsIntoLifetimeStatisticsTable(guild, lifetimeChannelStatistics);
     }
 }

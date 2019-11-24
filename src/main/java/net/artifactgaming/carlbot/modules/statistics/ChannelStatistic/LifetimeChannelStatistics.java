@@ -1,4 +1,4 @@
-package net.artifactgaming.carlbot.modules.statistics.ChannelStatistics;
+package net.artifactgaming.carlbot.modules.statistics.ChannelStatistic;
 
 public class LifetimeChannelStatistics extends ChannelStatistics {
     ///region SQL Column Names
