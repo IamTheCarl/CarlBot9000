@@ -1,17 +1,16 @@
 package net.artifactgaming.carlbot.modules.statistics.DatabaseSQL;
 
-import net.artifactgaming.carlbot.CarlBot;
 import net.artifactgaming.carlbot.Utils;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
 import net.artifactgaming.carlbot.modules.statistics.*;
+import net.artifactgaming.carlbot.modules.statistics.ChannelStatistics.LifetimeChannelStatistics;
+import net.artifactgaming.carlbot.modules.statistics.ChannelStatistics.WeeklyChannelStatistics;
 import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Invite;
 import net.dv8tion.jda.core.entities.TextChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Text;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

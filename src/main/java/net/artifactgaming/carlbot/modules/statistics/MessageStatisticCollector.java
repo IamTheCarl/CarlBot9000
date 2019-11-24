@@ -2,19 +2,18 @@ package net.artifactgaming.carlbot.modules.statistics;
 
 import net.artifactgaming.carlbot.Utils;
 import net.artifactgaming.carlbot.listeners.MessageReader;
+import net.artifactgaming.carlbot.modules.statistics.ChannelStatistics.WeeklyChannelStatistics;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.SettingsDatabaseHandler;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.StatisticsDatabaseHandler;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-import org.h2.engine.Setting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.text.ParseException;
-import java.util.List;
 
 public class MessageStatisticCollector implements MessageReader {
 

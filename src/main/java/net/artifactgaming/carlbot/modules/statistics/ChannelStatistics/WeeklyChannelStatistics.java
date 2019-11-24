@@ -1,6 +1,5 @@
-package net.artifactgaming.carlbot.modules.statistics;
+package net.artifactgaming.carlbot.modules.statistics.ChannelStatistics;
 
-import java.nio.channels.Channel;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -73,11 +72,11 @@ public class WeeklyChannelStatistics extends ChannelStatistics {
 
     ///endregion
 
-    void incrementNoOfMessagesSent(){
+    public void incrementNoOfMessagesSent(){
         ++noOfMessagesSent;
     }
 
-    void incrementNoOfMessagesSentWithImage(){
+    public void incrementNoOfMessagesSentWithImage(){
         ++noOfMessagesWithImage;
     }
 }

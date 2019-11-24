@@ -1,4 +1,4 @@
-package net.artifactgaming.carlbot.modules.statistics;
+package net.artifactgaming.carlbot.modules.statistics.ChannelStatistics;
 
 public abstract class ChannelStatistics {
     ///region SQL Column Names
@@ -7,11 +7,11 @@ public abstract class ChannelStatistics {
     public final static String CHANNEL_ID = "CHANNEL_ID";
     ///endregion
 
-    protected String channelID;
+    private String channelID;
 
-    protected String channelName;
+    private String channelName;
 
-    public ChannelStatistics(String _channelID, String _channelName) {
+    ChannelStatistics(String _channelID, String _channelName) {
         channelName = _channelName;
         channelID = _channelID;
     }
