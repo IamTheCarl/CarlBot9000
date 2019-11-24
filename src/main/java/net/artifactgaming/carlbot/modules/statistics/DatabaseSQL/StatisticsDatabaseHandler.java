@@ -11,6 +11,7 @@ import net.dv8tion.jda.core.entities.Invite;
 import net.dv8tion.jda.core.entities.TextChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Text;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -63,6 +64,52 @@ public class StatisticsDatabaseHandler {
             }
 
             return lifetimeChannelStatisticsList;
+        }
+
+        private LifetimeChannelStatistics getLifetimeChannelStatistics(Guild guild, TextChannel channel) throws SQLException {
+            Table lifetimeStatisticsTable = getLifetimeStatisticsTableInGuild(guild);
+
+            ResultSet result = lifetimeStatisticsTable.select()
+                    .where(LifetimeChannelStatistics.CHANNEL_ID, "=", channel.getId())
+                    .execute();
+
+            LifetimeChannelStatistics lifetimeChannelStatistics;
+            if (result.next()){
+                String channelID = result.getString(LifetimeChannelStatistics.CHANNEL_ID);
+                String channelName = result.getString(LifetimeChannelStatistics.CHANNEL_ID);
+                double percentageMessagesSent = result.getDouble(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_SENT);
+                double percentageMessageSentContainImage = result.getDouble(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_WITH_IMAGE);
+
+                lifetimeChannelStatistics = new LifetimeChannelStatistics(channelID, channelName, percentageMessagesSent, percentageMessageSentContainImage);
+            } else {
+                lifetimeChannelStatistics = new LifetimeChannelStatistics(channel.getId(), channel.getName());
+
+                insertNewChannelIntoLifetimeStatisticsTable(channel);
+            }
+
+            return lifetimeChannelStatistics;
+        }
+
+        private void updateLifetimeChannelStatistics(Guild guild, TextChannel channel, LifetimeChannelStatistics lifetimeChannelStatistics) throws SQLException {
+            Table lifetimeStatisticsTable = getLifetimeStatisticsTableInGuild(guild);
+
+            lifetimeStatisticsTable.update()
+                    .where(LifetimeChannelStatistics.CHANNEL_ID, "=", lifetimeChannelStatistics.getChannelID())
+                    .set(LifetimeChannelStatistics.CHANNEL_NAME, lifetimeChannelStatistics.getChannelName())
+                    .set(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_SENT, String.valueOf(lifetimeChannelStatistics.getPercentageOfTotalMessagesSent()))
+                    .set(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_WITH_IMAGE, String.valueOf(lifetimeChannelStatistics.getPercentageOfMessagesContainImages()))
+                    .execute();
+        }
+
+        private void insertNewChannelIntoLifetimeStatisticsTable(TextChannel channel) throws SQLException{
+            Table lifetimeStatisticsTable = getLifetimeStatisticsTableInGuild(channel.getGuild());
+
+            lifetimeStatisticsTable.insert()
+                    .set(LifetimeChannelStatistics.CHANNEL_ID, channel.getId())
+                    .set(LifetimeChannelStatistics.CHANNEL_NAME, channel.getName())
+                    .set(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_SENT, "0")
+                    .set(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_WITH_IMAGE, "0")
+                    .execute();
         }
 
         private Table getLifetimeStatisticsTableInGuild(Guild guild) throws SQLException {
@@ -202,5 +249,17 @@ public class StatisticsDatabaseHandler {
 
     public void updateWeeklyChannelStatistics(Guild guild, TextChannel channel, WeeklyChannelStatistics weeklyChannelStatistics) throws SQLException {
         weeklyDatabaseHandler.updateWeeklyChannelStatistics(guild, channel, weeklyChannelStatistics);
+    }
+
+    public List<LifetimeChannelStatistics> getLifetimeGuildStatistics(Guild guild) throws SQLException {
+        return lifetimeDatabaseHandler.getLifetimeGuildStatistics(guild);
+    }
+
+    public LifetimeChannelStatistics getLifetimeChannelStatistics(Guild guild, TextChannel channel) throws SQLException {
+        return lifetimeDatabaseHandler.getLifetimeChannelStatistics(guild, channel);
+    }
+
+    public void updateLifetimeChannelStatistics(Guild guild, TextChannel channel, LifetimeChannelStatistics lifetimeChannelStatistics) throws SQLException {
+        lifetimeDatabaseHandler.updateLifetimeChannelStatistics(guild, channel, lifetimeChannelStatistics);
     }
 }
