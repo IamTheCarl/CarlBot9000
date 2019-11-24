@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot;
 
+import net.artifactgaming.carlbot.listeners.OnCarlBotReady;
 import net.artifactgaming.carlbot.listeners.OnGuildMember;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.artifactgaming.carlbot.modules.Echo;
@@ -185,7 +186,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
     @Override
     public void onReady(ReadyEvent event) {
         for (OnCarlBotReady onCarlBotReady : onCarlBotReadyList){
-            onCarlBotReady.OnCarlBotReady(event);
+            onCarlBotReady.onCarlBotReady(event);
         }
     }
 
