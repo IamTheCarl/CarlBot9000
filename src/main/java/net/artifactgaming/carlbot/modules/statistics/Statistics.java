@@ -13,10 +13,7 @@ import net.artifactgaming.carlbot.modules.statistics.ChannelStatistic.WeeklyChan
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.SettingsDatabaseHandler;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.StatisticsDatabaseHandler;
 import net.artifactgaming.carlbot.modules.statistics.authority.ToggleStatistics;
-import net.dv8tion.jda.bot.JDABot;
-import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.ReadyEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
@@ -37,7 +34,7 @@ public class Statistics implements Module, Documented, PersistentModule {
      * How many days must pass for a weekly statistic to reset.
      * Keep it to 7, unless for debug.
      */
-    private final static int DAYS_TO_RESET = 7;
+    private final static int DAYS_TO_RESET = 0;
 
     private SettingsDatabaseHandler settingsDatabaseHandler;
 
@@ -115,6 +112,7 @@ public class Statistics implements Module, Documented, PersistentModule {
 
                 // Merge the data with the actual
                 for (LifetimeChannelStatistics toMerge: lifetimeChannelStatisticsToMergeList) {
+                    boolean hasActualRow = false;
                     for (LifetimeChannelStatistics actual: lifetimeChannelStatisticsList) {
                         if (toMerge.getChannelID().equals(actual.getChannelID())){
                             double mergedPercentage = actual.getPercentageOfTotalMessagesSent() + toMerge.getPercentageOfTotalMessagesSent();
@@ -123,14 +121,17 @@ public class Statistics implements Module, Documented, PersistentModule {
                             actual.setPercentageOfMessagesContainImages(mergedPercentageOnImage);
                             actual.setPercentageOfTotalMessagesSent(mergedPercentage);
                             actual.setChannelName(toMerge.getChannelName());
+                            hasActualRow = true;
                             break;
                         }
                     }
 
-                    // It will reach here if there was a row for a lifetime data
-                    // for this channel; We need to create one.
-                    statisticsDatabaseHandler.insertNewChannelStatisticsIntoLifetimeStatisticsTable(guild, toMerge);
-                    lifetimeChannelStatisticsList.add(toMerge);
+                    if (!hasActualRow){
+                        // It will reach here if there was no row for a lifetime data
+                        // for this channel; We need to create one.
+                        statisticsDatabaseHandler.insertNewChannelStatisticsIntoLifetimeStatisticsTable(guild, toMerge);
+                        lifetimeChannelStatisticsList.add(toMerge);
+                    }
                 }
                 
                 double totalPercentageOfMessagesSent = getTotalPercentageOfMessagesSent(lifetimeChannelStatisticsList);
@@ -210,7 +211,70 @@ public class Statistics implements Module, Documented, PersistentModule {
         return new Command[] {new StatisticsCommand(carlbot)};
     }
 
-    private class ShowWeeklyStaisticsCommand implements Command, Documented {
+    private class ShowLifetimeStatisticsCommand implements Command, Documented{
+
+        @Override
+        public String getCallsign() {
+            return "lifetime";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            if (event.getGuild() == null){
+                event.getTextChannel().sendMessage("Statistics command can only be invoked in a server!").queue();
+                return;
+            }
+
+            if (!guildHasStatisticsEnabled(event.getGuild())){
+                event.getTextChannel().sendMessage("This server does not have statistics enabled!").queue();
+                return;
+            }
+
+            List<LifetimeChannelStatistics> lifetimeChannelStatistics = statisticsDatabaseHandler.getLifetimeGuildStatistics(event.getGuild());
+
+            String asReadableStatistics = getReadableStatistics(lifetimeChannelStatistics);
+            event.getTextChannel().sendMessage(asReadableStatistics).queue();
+        }
+
+        private String getReadableStatistics(List<LifetimeChannelStatistics> lifetimeChannelStatisticsList){
+            if (lifetimeChannelStatisticsList.size() <= 0){
+                return "None of the channels' weekly statistics have been tracked into the lifetime database yet!" + Utils.NEWLINE
+                        + "Try again after a week."
+                        + Utils.NEWLINE
+                        + "**NOTE**: Channels that I do not have access to is not tracked!";
+            }
+
+            // TODO: Like the weekly statistics, separate into multiple pages if the list is too long.
+            StringBuilder readableStatistics = new StringBuilder();
+            readableStatistics.append("```md");
+            for (LifetimeChannelStatistics channelStatistics : lifetimeChannelStatisticsList){
+                readableStatistics.append(Utils.NEWLINE);
+                readableStatistics.append(channelStatistics.getChannelName()).append(" (").append(String.format("%.1f", channelStatistics.getPercentageOfTotalMessagesSent())).append("%)").append(Utils.NEWLINE);
+                readableStatistics.append("====").append(Utils.NEWLINE);
+                readableStatistics.append(String.format("%.1f", channelStatistics.getPercentageOfMessagesContainImages())).append("% contains images.").append(Utils.NEWLINE);
+            }
+            readableStatistics.append("```**NOTE**: Channels that I do not have access to is not tracked!");
+
+            return readableStatistics.toString();
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Statistics.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Show lifetime statistics of all the channels.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "lifetime";
+        }
+    }
+
+    private class ShowWeeklyStatisticsCommand implements Command, Documented {
 
         @Override
         public String getCallsign() {
@@ -353,7 +417,8 @@ public class Statistics implements Module, Documented, PersistentModule {
             commands = new CommandHandler(carlbot);
 
             commands.addCommand(new ToggleStatisticsCommand());
-            commands.addCommand(new ShowWeeklyStaisticsCommand());
+            commands.addCommand(new ShowWeeklyStatisticsCommand());
+            commands.addCommand(new ShowLifetimeStatisticsCommand());
         }
 
         @Override

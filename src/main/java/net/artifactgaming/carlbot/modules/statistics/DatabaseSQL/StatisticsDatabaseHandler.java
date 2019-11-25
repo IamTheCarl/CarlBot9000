@@ -55,7 +55,7 @@ public class StatisticsDatabaseHandler {
 
             while (result.next()){
                 String channelID = result.getString(LifetimeChannelStatistics.CHANNEL_ID);
-                String channelName = result.getString(LifetimeChannelStatistics.CHANNEL_ID);
+                String channelName = result.getString(LifetimeChannelStatistics.CHANNEL_NAME);
                 double percentageMessagesSent = result.getDouble(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_SENT);
                 double percentageMessageSentContainImage = result.getDouble(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_WITH_IMAGE);
 
@@ -76,7 +76,7 @@ public class StatisticsDatabaseHandler {
             LifetimeChannelStatistics lifetimeChannelStatistics;
             if (result.next()){
                 String channelID = result.getString(LifetimeChannelStatistics.CHANNEL_ID);
-                String channelName = result.getString(LifetimeChannelStatistics.CHANNEL_ID);
+                String channelName = result.getString(LifetimeChannelStatistics.CHANNEL_NAME);
                 double percentageMessagesSent = result.getDouble(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_SENT);
                 double percentageMessageSentContainImage = result.getDouble(LifetimeChannelStatistics.PERCENT_OF_MESSAGES_WITH_IMAGE);
 
