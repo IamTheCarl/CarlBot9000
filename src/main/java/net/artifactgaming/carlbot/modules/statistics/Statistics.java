@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class Statistics implements Module, Documented, PersistentModule {
@@ -165,7 +166,7 @@ public class Statistics implements Module, Documented, PersistentModule {
                 LocalDate currentLocalDate = Calendar.getInstance().getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
                 for (WeeklyChannelStatistics weeklyChannelStatistics: weeklyChannelStatisticsList) {
-                    LocalDate startedTrackingLocalDate = weeklyChannelStatistics.getTrackedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                    LocalDate startedTrackingLocalDate = weeklyChannelStatistics.getTrackedDate();
 
                     Period dateDifference = Period.between(startedTrackingLocalDate, currentLocalDate);
                     // If one week has passed since the date of tracking, reset
@@ -327,13 +328,9 @@ public class Statistics implements Module, Documented, PersistentModule {
                     double percentageOfMessagesWereImage = ((double) weeklyChannelStatistics.getNoOfMessagesWithImage() / (double) weeklyChannelStatistics.getNoOfMessagesSent()) * 100;
                     statisticsResult.append(weeklyChannelStatistics.getNoOfMessagesWithImage()).append(" messages had images.").append(" (").append(String.format("%.1f",percentageOfMessagesWereImage)).append("%)").append(Utils.NEWLINE);
                 }
-                // Displays when it will reset
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTime(weeklyChannelStatistics.getTrackedDate());
-                calendar.add(Calendar.DATE, DAYS_TO_RESET);
 
-                DateFormat dateFormatter = new SimpleDateFormat(Utils.GLOBAL_DATE_FORMAT_PATTERN);
-                String resetDateString = dateFormatter.format(calendar.getTime());
+                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(Utils.GLOBAL_DATE_FORMAT_PATTERN);
+                String resetDateString = dateFormatter.format(weeklyChannelStatistics.getTrackedDate().plusDays(DAYS_TO_RESET));
 
                 statisticsResult.append("> Next reset at: ").append(resetDateString).append(Utils.NEWLINE);
 

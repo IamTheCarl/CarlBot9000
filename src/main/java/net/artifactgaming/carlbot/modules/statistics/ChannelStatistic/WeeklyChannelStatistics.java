@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot.modules.statistics.ChannelStatistic;
 
+import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -29,16 +30,16 @@ public class WeeklyChannelStatistics extends ChannelStatistics {
      * (So that we can know when to reset the week's statistics)
      * TODO: Use 'LocalDate' instead; Much better.
      */
-    private Date trackedDate;
+    private LocalDate trackedDate;
 
     public WeeklyChannelStatistics(String _channelID, String _channelName){
         super(_channelID, _channelName);
         noOfMessagesSent = 0;
         noOfMessagesWithImage = 0;
-        trackedDate = Calendar.getInstance().getTime();
+        trackedDate = LocalDate.now();
     }
 
-    public WeeklyChannelStatistics(String _channelID, String _channelName, int _noOfMessagesSent, int _noOfMessagesWithImage, Date _trackedDate) {
+    public WeeklyChannelStatistics(String _channelID, String _channelName, int _noOfMessagesSent, int _noOfMessagesWithImage, LocalDate _trackedDate) {
         super(_channelID, _channelName);
         noOfMessagesSent = _noOfMessagesSent;
         noOfMessagesWithImage = _noOfMessagesWithImage;
@@ -63,11 +64,11 @@ public class WeeklyChannelStatistics extends ChannelStatistics {
         this.noOfMessagesWithImage = noOfMessagesWithImage;
     }
 
-    public Date getTrackedDate() {
+    public LocalDate getTrackedDate() {
         return trackedDate;
     }
 
-    public void setTrackedDate(Date trackedDate) {
+    public void setTrackedDate(LocalDate trackedDate) {
         this.trackedDate = trackedDate;
     }
 
@@ -86,7 +87,7 @@ public class WeeklyChannelStatistics extends ChannelStatistics {
     public void reset(){
         noOfMessagesSent = 0;
         noOfMessagesWithImage = 0;
-        trackedDate = Calendar.getInstance().getTime();
+        trackedDate = LocalDate.now();
     }
 
     //endregion

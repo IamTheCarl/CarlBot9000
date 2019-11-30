@@ -18,6 +18,8 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -169,9 +171,9 @@ public class StatisticsDatabaseHandler {
                 int noOfMessagesSentWithImage = result.getInt(WeeklyChannelStatistics.NO_OF_MESSAGES_WITH_IMAGE);
                 String trackedDateString = result.getString(WeeklyChannelStatistics.TRACKED_DATE);
 
-                // Convert the date string as a 'Date' type.
-                DateFormat dateFormatter = new SimpleDateFormat(Utils.GLOBAL_DATE_FORMAT_PATTERN);
-                Date trackedDate = dateFormatter.parse(trackedDateString);
+                // Convert the date string as a 'LocalDate' type.
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Utils.GLOBAL_DATE_FORMAT_PATTERN);
+                LocalDate trackedDate = LocalDate.parse(trackedDateString, formatter);
 
                 WeeklyChannelStatistics weeklyChannelStatistics = new WeeklyChannelStatistics(channelID, channelName, noOfMessagesSent, noOfMessagesSentWithImage, trackedDate);
                 weeklyChannelStatisticsList.add(weeklyChannelStatistics);
@@ -195,8 +197,8 @@ public class StatisticsDatabaseHandler {
                 String trackedDateString = result.getString(WeeklyChannelStatistics.TRACKED_DATE);
 
                 // Convert the date string as a 'Date' type.
-                DateFormat dateFormatter = new SimpleDateFormat(Utils.GLOBAL_DATE_FORMAT_PATTERN);
-                Date trackedDate = dateFormatter.parse(trackedDateString);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Utils.GLOBAL_DATE_FORMAT_PATTERN);
+                LocalDate trackedDate = LocalDate.parse(trackedDateString, formatter);
 
                 weeklyChannelStatistics = new WeeklyChannelStatistics(channelID, channelName, noOfMessagesSent, noOfMessagesSentWithImage, trackedDate);
             } else {
@@ -211,7 +213,7 @@ public class StatisticsDatabaseHandler {
         private void updateWeeklyChannelStatistics(Guild guild, WeeklyChannelStatistics weeklyChannelStatistics) throws SQLException {
             Table weeklyStatisticsTable = getWeeklyStatisticsTableInGuild(guild);
 
-            DateFormat dateFormatter = new SimpleDateFormat(Utils.GLOBAL_DATE_FORMAT_PATTERN);
+            DateTimeFormatter  dateFormatter = DateTimeFormatter .ofPattern(Utils.GLOBAL_DATE_FORMAT_PATTERN);
             String dateAsString = dateFormatter.format(weeklyChannelStatistics.getTrackedDate());
 
             weeklyStatisticsTable.update()
