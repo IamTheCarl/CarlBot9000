@@ -1,5 +1,7 @@
 package net.artifactgaming.carlbot.modules.statistics.ChannelStatistic;
 
+import net.artifactgaming.carlbot.Utils;
+
 import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.Date;

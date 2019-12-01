@@ -12,8 +12,11 @@ import net.artifactgaming.carlbot.modules.statistics.ChannelStatistic.LifetimeCh
 import net.artifactgaming.carlbot.modules.statistics.ChannelStatistic.WeeklyChannelStatistics;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.SettingsDatabaseHandler;
 import net.artifactgaming.carlbot.modules.statistics.DatabaseSQL.StatisticsDatabaseHandler;
+import net.artifactgaming.carlbot.modules.statistics.StatisticList.StatisticListMessage;
+import net.artifactgaming.carlbot.modules.statistics.StatisticList.StatisticPage;
 import net.artifactgaming.carlbot.modules.statistics.authority.ToggleStatistics;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.events.ReadyEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
@@ -28,6 +31,7 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Supplier;
 
 public class Statistics implements Module, Documented, PersistentModule {
 
@@ -35,13 +39,15 @@ public class Statistics implements Module, Documented, PersistentModule {
      * How many days must pass for a weekly statistic to reset.
      * Keep it to 7, unless for debug.
      */
-    private final static int DAYS_TO_RESET = 0;
+    private final static int DAYS_TO_RESET = 7;
 
     private SettingsDatabaseHandler settingsDatabaseHandler;
 
     private StatisticsDatabaseHandler statisticsDatabaseHandler;
 
     private MessageStatisticCollector messageStatisticCollector;
+
+    private StatisticListMessageReactionListener statisticListMessageReactionListener;
 
     private Persistence persistence;
 
@@ -75,6 +81,10 @@ public class Statistics implements Module, Documented, PersistentModule {
         statisticsDatabaseHandler = new StatisticsDatabaseHandler(persistence, this);
 
         messageStatisticCollector = new MessageStatisticCollector(settingsDatabaseHandler, statisticsDatabaseHandler);
+
+        statisticListMessageReactionListener = new StatisticListMessageReactionListener();
+        carlbot.addOnMessageReactionListener(statisticListMessageReactionListener);
+
 
         // TODO: Setup a repeating timer to constantly check if weekly statistics need resetting.
 
@@ -231,32 +241,74 @@ public class Statistics implements Module, Documented, PersistentModule {
                 return;
             }
 
+            Message statisticMessage = event.getChannel().sendMessage(
+                    "Fetching statistics...").complete();
+
             List<LifetimeChannelStatistics> lifetimeChannelStatistics = statisticsDatabaseHandler.getLifetimeGuildStatistics(event.getGuild());
 
-            String asReadableStatistics = getReadableStatistics(lifetimeChannelStatistics);
-            event.getTextChannel().sendMessage(asReadableStatistics).queue();
+            ArrayList<StatisticPage> statisticPages = separateByPages(lifetimeChannelStatistics);
+
+            if (statisticPages.size() == 1){
+                statisticMessage.editMessage(statisticPages.get(0).getPageContent()).queue();
+            } else if (statisticPages.size() == 0){
+                statisticMessage.editMessage("There is no statistics to show.. yet." + Utils.NEWLINE + "**NOTE**: Channels that I do not have access to is not tracked!").queue();
+            } else {
+                StatisticListMessage statisticListMessage = new StatisticListMessage(statisticPages, statisticListMessageReactionListener, statisticMessage.getId());
+
+                statisticListMessageReactionListener.addStatisticListMessageToListener(statisticListMessage);
+
+                statisticMessage.editMessage(statisticListMessage.getCurrentPage()).queue();
+
+                statisticMessage.addReaction(StatisticListMessageReactionListener.PREVIOUS_EMOTE_NAME).complete();
+                statisticMessage.addReaction(StatisticListMessageReactionListener.NEXT_EMOTE_NAME).queue();
+            }
         }
 
-        private String getReadableStatistics(List<LifetimeChannelStatistics> lifetimeChannelStatisticsList){
-            if (lifetimeChannelStatisticsList.size() <= 0){
-                return "None of the channels' weekly statistics have been tracked into the lifetime database yet!" + Utils.NEWLINE
-                        + "Try again after a week."
-                        + Utils.NEWLINE
-                        + "**NOTE**: Channels that I do not have access to is not tracked!";
+        private ArrayList<StatisticPage> separateByPages(List<LifetimeChannelStatistics> lifetimeChannelStatisticsList){
+            ///region Local_Function
+
+            Supplier<StringBuilder> createNewPageTemplate = () -> {
+                StringBuilder template = new StringBuilder();
+                template.append("```md" + Utils.NEWLINE);
+                return template;
+            };
+
+            ///endregion
+
+            // TODO: Possible refecctor? (Too dependent on string length)
+            ArrayList<StatisticPage> result = new ArrayList<>();
+
+            StringBuilder stringBuilder = createNewPageTemplate.get();
+
+            for (LifetimeChannelStatistics statistic: lifetimeChannelStatisticsList) {
+                String toAppend = toReadableString(statistic);
+
+                // If appending it will exceed character count.
+                if (stringBuilder.length() + toAppend.length() >= StatisticPage.maxCharacterCountInPage){
+                    // End this page, and create new page instead.
+                    stringBuilder.append("```**NOTE**: Channels that I do not have access to is not tracked!");
+                    result.add(new StatisticPage(stringBuilder.toString()));
+
+                    stringBuilder = createNewPageTemplate.get();
+                }
+
+                stringBuilder.append(toAppend);
             }
 
-            // TODO: Like the weekly statistics, separate into multiple pages if the list is too long.
-            StringBuilder readableStatistics = new StringBuilder();
-            readableStatistics.append("```md");
-            for (LifetimeChannelStatistics channelStatistics : lifetimeChannelStatisticsList){
-                readableStatistics.append(Utils.NEWLINE);
-                readableStatistics.append(channelStatistics.getChannelName()).append(" (").append(String.format("%.1f", channelStatistics.getPercentageOfTotalMessagesSent())).append("%)").append(Utils.NEWLINE);
-                readableStatistics.append("====").append(Utils.NEWLINE);
-                readableStatistics.append(String.format("%.1f", channelStatistics.getPercentageOfMessagesContainImages())).append("% contains images.").append(Utils.NEWLINE);
+            // Last page has statistic
+            if (stringBuilder.length() > 10){
+                stringBuilder.append("```**NOTE**: Channels that I do not have access to is not tracked!");
+                result.add(new StatisticPage(stringBuilder.toString()));
             }
-            readableStatistics.append("```**NOTE**: Channels that I do not have access to is not tracked!");
 
-            return readableStatistics.toString();
+            return result;
+        }
+
+        private String toReadableString(LifetimeChannelStatistics channelStatistics){
+            return Utils.NEWLINE +
+                    channelStatistics.getChannelName() + " (" + String.format("%.1f", channelStatistics.getPercentageOfTotalMessagesSent()) + "%)" + Utils.NEWLINE +
+                    "====" + Utils.NEWLINE +
+                    String.format("%.1f", channelStatistics.getPercentageOfMessagesContainImages()) + "% contains images." + Utils.NEWLINE;
         }
 
         @Override
@@ -294,51 +346,96 @@ public class Statistics implements Module, Documented, PersistentModule {
                 return;
             }
 
-            List<WeeklyChannelStatistics> weeklyChannelStatisticsList = statisticsDatabaseHandler.getWeeklyGuildStatistics(event.getGuild());
+            Message statisticMessage = event.getChannel().sendMessage(
+                    "Fetching statistics...").complete();
 
-            String readableStatisticResult = getReadableStatisticsResult(weeklyChannelStatisticsList);
+            List<WeeklyChannelStatistics> weeklyChannelStatistics = statisticsDatabaseHandler.getWeeklyGuildStatistics(event.getGuild());
 
-            event.getTextChannel().sendMessage(readableStatisticResult).queue();
-            event.getTextChannel().sendMessage("L: " + readableStatisticResult.length()).queue();
+            ArrayList<StatisticPage> statisticPages = separateByPages(weeklyChannelStatistics);
+
+            if (statisticPages.size() == 1){
+                statisticMessage.editMessage(statisticPages.get(0).getPageContent()).queue();
+            } else if (statisticPages.size() == 0){
+                statisticMessage.editMessage("There is no statistics to show for this week.. yet." + Utils.NEWLINE + "**NOTE**: Channels that I do not have access to is not tracked!").queue();
+            } else {
+                StatisticListMessage statisticListMessage = new StatisticListMessage(statisticPages, statisticListMessageReactionListener, statisticMessage.getId());
+
+                statisticListMessageReactionListener.addStatisticListMessageToListener(statisticListMessage);
+
+                statisticMessage.editMessage(statisticListMessage.getCurrentPage()).queue();
+
+                statisticMessage.addReaction(StatisticListMessageReactionListener.PREVIOUS_EMOTE_NAME).complete();
+                statisticMessage.addReaction(StatisticListMessageReactionListener.NEXT_EMOTE_NAME).queue();
+            }
         }
 
-        private String getReadableStatisticsResult(List<WeeklyChannelStatistics> weeklyChannelStatisticsList) {
+        private ArrayList<StatisticPage> separateByPages(List<WeeklyChannelStatistics> weeklyChannelStatisticsList){
+            ///region Local_Function
+
+            Supplier<StringBuilder> createNewPageTemplate = () -> {
+                StringBuilder template = new StringBuilder();
+                template.append("```md" + Utils.NEWLINE);
+                return template;
+            };
+
+            ///endregion
+
+            // TODO: Possible refecctor? (Too dependent on string length)
+            ArrayList<StatisticPage> result = new ArrayList<>();
+
+            StringBuilder stringBuilder = createNewPageTemplate.get();
+
             long totalMessagesSent = getTotalMessagesSent(weeklyChannelStatisticsList);
 
-            if (totalMessagesSent <= 0){
-                return "No messages have been sent in any channels since I started tracking for this week!"
-                        + Utils.NEWLINE
-                        + "**NOTE**: Channels that I do not have access to is not tracked!";
+            if (totalMessagesSent == 0){
+                return result;
             }
 
-            // TODO: Optimise for word-count (2000 word limit); Break into multiple pages?
+            for (WeeklyChannelStatistics statistic: weeklyChannelStatisticsList) {
+                String toAppend = toReadableString(totalMessagesSent, statistic);
 
-            StringBuilder statisticsResult = new StringBuilder();
-            statisticsResult.append("```md" + Utils.NEWLINE);
+                // If appending it will exceed character count.
+                if (stringBuilder.length() + toAppend.length() >= StatisticPage.maxCharacterCountInPage){
+                    // End this page, and create new page instead.
+                    stringBuilder.append("```**NOTE**: Channels that I do not have access to is not tracked!");
+                    result.add(new StatisticPage(stringBuilder.toString()));
 
-            for (WeeklyChannelStatistics weeklyChannelStatistics: weeklyChannelStatisticsList) {
-                double percentageOfMessagesInGuild = ((double) weeklyChannelStatistics.getNoOfMessagesSent() / (double) totalMessagesSent) * 100;
-                statisticsResult.append(weeklyChannelStatistics.getChannelName()).append(" (").append(String.format("%.1f", percentageOfMessagesInGuild)).append("%)").append(Utils.NEWLINE);
-
-                statisticsResult.append("====" + Utils.NEWLINE);
-
-                statisticsResult.append(weeklyChannelStatistics.getNoOfMessagesSent()).append(" messages were sent.").append(Utils.NEWLINE);
-
-                if (weeklyChannelStatistics.getNoOfMessagesSent() > 0) {
-                    double percentageOfMessagesWereImage = ((double) weeklyChannelStatistics.getNoOfMessagesWithImage() / (double) weeklyChannelStatistics.getNoOfMessagesSent()) * 100;
-                    statisticsResult.append(weeklyChannelStatistics.getNoOfMessagesWithImage()).append(" messages had images.").append(" (").append(String.format("%.1f",percentageOfMessagesWereImage)).append("%)").append(Utils.NEWLINE);
+                    stringBuilder = createNewPageTemplate.get();
                 }
 
-                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(Utils.GLOBAL_DATE_FORMAT_PATTERN);
-                String resetDateString = dateFormatter.format(weeklyChannelStatistics.getTrackedDate().plusDays(DAYS_TO_RESET));
-
-                statisticsResult.append("> Next reset at: ").append(resetDateString).append(Utils.NEWLINE);
-
-                statisticsResult.append(Utils.NEWLINE);
+                stringBuilder.append(toAppend);
             }
 
-            statisticsResult.append("```" + Utils.NEWLINE);
-            statisticsResult.append("**NOTE**: Channels that I do not have access to is not tracked!");
+            // Last page has statistic
+            if (stringBuilder.length() > 10){
+                stringBuilder.append("```**NOTE**: Channels that I do not have access to is not tracked!");
+                result.add(new StatisticPage(stringBuilder.toString()));
+            }
+
+            return result;
+        }
+
+        private String toReadableString(long totalMessagesSent, WeeklyChannelStatistics weeklyChannelStatistics){
+            StringBuilder statisticsResult = new StringBuilder();
+
+            double percentageOfMessagesInGuild = ((double) weeklyChannelStatistics.getNoOfMessagesSent() / (double) totalMessagesSent) * 100;
+            statisticsResult.append(weeklyChannelStatistics.getChannelName()).append(" (").append(String.format("%.1f", percentageOfMessagesInGuild)).append("%)").append(Utils.NEWLINE);
+
+            statisticsResult.append("====" + Utils.NEWLINE);
+
+            statisticsResult.append(weeklyChannelStatistics.getNoOfMessagesSent()).append(" messages were sent.").append(Utils.NEWLINE);
+
+            if (weeklyChannelStatistics.getNoOfMessagesSent() > 0) {
+                double percentageOfMessagesWereImage = ((double) weeklyChannelStatistics.getNoOfMessagesWithImage() / (double) weeklyChannelStatistics.getNoOfMessagesSent()) * 100;
+                statisticsResult.append(weeklyChannelStatistics.getNoOfMessagesWithImage()).append(" messages had images.").append(" (").append(String.format("%.1f",percentageOfMessagesWereImage)).append("%)").append(Utils.NEWLINE);
+            }
+
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(Utils.GLOBAL_DATE_FORMAT_PATTERN);
+            String resetDateString = dateFormatter.format(weeklyChannelStatistics.getTrackedDate().plusDays(DAYS_TO_RESET));
+
+            statisticsResult.append("> Next reset at: ").append(resetDateString).append(Utils.NEWLINE);
+
+            statisticsResult.append(Utils.NEWLINE);
 
             return statisticsResult.toString();
         }
