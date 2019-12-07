@@ -23,23 +23,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.Period;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Supplier;
 
 public class Statistics implements Module, Documented, PersistentModule {
-
-    /**
-     * How many days must pass for a weekly statistic to reset.
-     * Keep it to 7, unless for debug.
-     */
-    private final static int DAYS_TO_RESET = 7;
 
     private SettingsDatabaseHandler settingsDatabaseHandler;
 
@@ -53,8 +41,10 @@ public class Statistics implements Module, Documented, PersistentModule {
 
     private Logger logger = LoggerFactory.getLogger(Statistics.class);
 
+    private WeeklyStatisticsResetter weeklyStatisticsResetter;
+
     public Statistics(){
-        CarlBot.addOnCarlbotReadyListener(new ResetOverdueWeeklyStatisticsOnCarlBotReady());
+        CarlBot.addOnCarlbotReadyListener(new SetupWeeklyStatisticsResetter());
     }
 
     @Override
@@ -91,130 +81,16 @@ public class Statistics implements Module, Documented, PersistentModule {
         carlbot.addOnMessageReceivedListener(messageStatisticCollector);
     }
 
-    private class ResetOverdueWeeklyStatisticsOnCarlBotReady implements OnCarlBotReady {
-
-        // TODO: Possible refactor on the 'lifetimeChannelStatisticsToMergeList' ArrayList?
-
-        /**
-         * Create a list to merge with the actual database later.
-         */
-        private ArrayList<LifetimeChannelStatistics> lifetimeChannelStatisticsToMergeList = new ArrayList<>();
-
-        /**
-         * Debug purposes.
-         */
-        int noOfResetsDone = 0;
+    private class SetupWeeklyStatisticsResetter implements OnCarlBotReady {
 
         @Override
         public void onCarlBotReady(ReadyEvent event) {
-            List<Guild> guilds = event.getJDA().getGuilds();
-
-            for (Guild guild: guilds) {
-                tryResetOverdueWeeklyStatistics(guild);
-                tryMergeLifetimeChannelStatistics(guild);
-                lifetimeChannelStatisticsToMergeList.clear();
-            }
-            logger.debug("Reset " + noOfResetsDone + " channels because their weekly statistic data was outdated!");
+            weeklyStatisticsResetter = new WeeklyStatisticsResetter(event.getJDA(), logger, statisticsDatabaseHandler);
+            // Do a reset when carl-bot startup
+            weeklyStatisticsResetter.resetOverdueStatistics();
         }
 
-        private void tryMergeLifetimeChannelStatistics(Guild guild) {
-            try {
-                List<LifetimeChannelStatistics> lifetimeChannelStatisticsList = statisticsDatabaseHandler.getLifetimeGuildStatistics(guild);
 
-                // Merge the data with the actual
-                for (LifetimeChannelStatistics toMerge: lifetimeChannelStatisticsToMergeList) {
-                    boolean hasActualRow = false;
-                    for (LifetimeChannelStatistics actual: lifetimeChannelStatisticsList) {
-                        if (toMerge.getChannelID().equals(actual.getChannelID())){
-                            double mergedPercentage = actual.getPercentageOfTotalMessagesSent() + toMerge.getPercentageOfTotalMessagesSent();
-                            double mergedPercentageOnImage = (actual.getPercentageOfMessagesContainImages() + toMerge.getPercentageOfMessagesContainImages()) / 2;
-
-                            actual.setPercentageOfMessagesContainImages(mergedPercentageOnImage);
-                            actual.setPercentageOfTotalMessagesSent(mergedPercentage);
-                            actual.setChannelName(toMerge.getChannelName());
-                            hasActualRow = true;
-                            break;
-                        }
-                    }
-
-                    if (!hasActualRow){
-                        // It will reach here if there was no row for a lifetime data
-                        // for this channel; We need to create one.
-                        statisticsDatabaseHandler.insertNewChannelStatisticsIntoLifetimeStatisticsTable(guild, toMerge);
-                        lifetimeChannelStatisticsList.add(toMerge);
-                    }
-                }
-                
-                double totalPercentageOfMessagesSent = getTotalPercentageOfMessagesSent(lifetimeChannelStatisticsList);
-                // Recalculate the merged result
-                for (LifetimeChannelStatistics mergedResult: lifetimeChannelStatisticsList) {
-                    double finalPercentage = (mergedResult.getPercentageOfTotalMessagesSent() / totalPercentageOfMessagesSent) * 100;
-                    mergedResult.setPercentageOfTotalMessagesSent(finalPercentage);
-
-                    statisticsDatabaseHandler.updateLifetimeChannelStatistics(guild, mergedResult);
-                }
-
-            } catch (SQLException e){
-                logger.error("Failed to fetch one of the guilds lifetime channel statistics due to: " + e.getMessage());
-            }
-        }
-        
-        private double getTotalPercentageOfMessagesSent(List<LifetimeChannelStatistics> lifetimeChannelStatisticsList){
-            double result = 0;
-            for (LifetimeChannelStatistics lifetimeChannelStatistics: lifetimeChannelStatisticsList) {
-                result += lifetimeChannelStatistics.getPercentageOfTotalMessagesSent();
-            }
-            return result;
-        }
-
-        private void tryResetOverdueWeeklyStatistics(Guild guild){
-            try {
-                List<WeeklyChannelStatistics> weeklyChannelStatisticsList = statisticsDatabaseHandler.getWeeklyGuildStatistics(guild);
-
-                long totalMessagesSent = getTotalMessagesSent(weeklyChannelStatisticsList);
-
-                LocalDate currentLocalDate = Calendar.getInstance().getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
-                for (WeeklyChannelStatistics weeklyChannelStatistics: weeklyChannelStatisticsList) {
-                    LocalDate startedTrackingLocalDate = weeklyChannelStatistics.getTrackedDate();
-
-                    Period dateDifference = Period.between(startedTrackingLocalDate, currentLocalDate);
-                    // If one week has passed since the date of tracking, reset
-                    if (dateDifference.getDays() >= DAYS_TO_RESET){
-                        resetChannelWeeklyStatistics(guild, weeklyChannelStatistics, totalMessagesSent);
-                    }
-                }
-            } catch (SQLException e){
-                logger.error("Failed to fetch one of the guilds weekly channel statistics due to: " + e.getMessage());
-            } catch (ParseException e){
-                logger.error("Failed to properly parse one of the date-formats in the weekly channel statistics: " + e.getMessage());
-            }
-        }
-
-        private void resetChannelWeeklyStatistics(Guild guild, WeeklyChannelStatistics weeklyChannelStatistics, long totalMessagesSent) throws SQLException{
-            // TODO: Maybe do something if the channel is now not-visible or deleted?
-
-            // If no messages were sent onto this channel for this week, do nothing.
-            if (weeklyChannelStatistics.getNoOfMessagesSent() > 0) {
-                // To merge with the actual database later.
-                LifetimeChannelStatistics lifetimeChannelStatisticsToMerge = new LifetimeChannelStatistics(weeklyChannelStatistics.getChannelID(), weeklyChannelStatistics.getChannelName());
-
-                double percentOfMessagesSent = ((double) weeklyChannelStatistics.getNoOfMessagesSent() / totalMessagesSent) * 100;
-                lifetimeChannelStatisticsToMerge.setPercentageOfTotalMessagesSent(percentOfMessagesSent);
-
-                double percentOfMessagesHadImages = (weeklyChannelStatistics.getNoOfMessagesWithImage() / (double) weeklyChannelStatistics.getNoOfMessagesSent()) * 100;
-                lifetimeChannelStatisticsToMerge.setPercentageOfMessagesContainImages(percentOfMessagesHadImages);
-
-                lifetimeChannelStatisticsToMergeList.add(lifetimeChannelStatisticsToMerge);
-            }
-
-            weeklyChannelStatistics.reset();
-            statisticsDatabaseHandler.updateWeeklyChannelStatistics(guild, weeklyChannelStatistics);
-
-            // DEBUG!!!
-            logger.debug("Reset channel weekly statistics :: " + weeklyChannelStatistics.getChannelName());
-            ++noOfResetsDone;
-        }
     }
 
     @Override
@@ -431,7 +307,7 @@ public class Statistics implements Module, Documented, PersistentModule {
             }
 
             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(Utils.GLOBAL_DATE_FORMAT_PATTERN);
-            String resetDateString = dateFormatter.format(weeklyChannelStatistics.getTrackedDate().plusDays(DAYS_TO_RESET));
+            String resetDateString = dateFormatter.format(weeklyChannelStatistics.getTrackedDate().plusDays(WeeklyStatisticsResetter.DAYS_TO_RESET));
 
             statisticsResult.append("> Next reset at: ").append(resetDateString).append(Utils.NEWLINE);
 
