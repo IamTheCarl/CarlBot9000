@@ -43,6 +43,8 @@ public class Statistics implements Module, Documented, PersistentModule {
 
     private WeeklyStatisticsResetter weeklyStatisticsResetter;
 
+    private Timer weeklyResetTimer;
+
     public Statistics(){
         CarlBot.addOnCarlbotReadyListener(new SetupWeeklyStatisticsResetter());
     }
@@ -86,8 +88,18 @@ public class Statistics implements Module, Documented, PersistentModule {
         @Override
         public void onCarlBotReady(ReadyEvent event) {
             weeklyStatisticsResetter = new WeeklyStatisticsResetter(event.getJDA(), logger, statisticsDatabaseHandler);
-            // Do a reset when carl-bot startup
-            weeklyStatisticsResetter.resetOverdueStatistics();
+            weeklyResetTimer = new Timer();
+
+            weeklyResetTimer.scheduleAtFixedRate(
+                    new TimerTask() {
+                        @Override
+                        public void run() {
+                            weeklyStatisticsResetter.resetOverdueStatistics();
+                        }
+                    },
+                    0,
+                    86400000 //24 Hour in miliseconds
+            );
         }
 
 
