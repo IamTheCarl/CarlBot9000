@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot;
 
+import net.artifactgaming.carlbot.listeners.OnCarlBotReady;
 import net.artifactgaming.carlbot.listeners.OnGuildMember;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.artifactgaming.carlbot.modules.Echo;
@@ -12,6 +13,7 @@ import net.artifactgaming.carlbot.modules.authority.AuthorityManagement;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.schedule.Schedules;
 import net.artifactgaming.carlbot.modules.selfdocumentation.SelfDocumentation;
+import net.artifactgaming.carlbot.modules.statistics.Statistics;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.entities.User;
@@ -54,8 +56,6 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
     private CommandHandler commands = new CommandHandler(this);
 
-
-
     /*
      * A reminder to myself because I have goldfish memory:
      * You can enable the debug logger from command line by setting the property org.slf4j.simpleLogger.defaultLogLevel
@@ -82,6 +82,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.addModule(new Pelt());
         bot.addModule(new Purge());
         bot.addModule(new Games());
+        bot.addModule(new Statistics());
 
         bot.run();
     }
@@ -185,7 +186,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
     @Override
     public void onReady(ReadyEvent event) {
         for (OnCarlBotReady onCarlBotReady : onCarlBotReadyList){
-            onCarlBotReady.OnCarlBotReady(event);
+            onCarlBotReady.onCarlBotReady(event);
         }
     }
 

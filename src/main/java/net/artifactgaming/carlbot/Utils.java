@@ -12,6 +12,11 @@ import java.util.function.Predicate;
 
 public class Utils {
 
+    /**
+     * Use this date format pattern when converting from/to Date with strings.
+     */
+    public final static String GLOBAL_DATE_FORMAT_PATTERN = "MM/dd/yyyy";
+
     public final static String STRING_EMPTY = "";
 
     public final static String CALLSIGN = "$>";
@@ -185,5 +190,21 @@ public class Utils {
         }
 
         return discordId;
+    }
+
+    public static boolean messageContainsImage(Message message){
+        List<Message.Attachment> messageAttachments = message.getAttachments();
+
+        if (messageAttachments.size() <= 0){
+            return false;
+        }
+
+        for (Message.Attachment attachment: messageAttachments) {
+            if (attachment.isImage()){
+                return true;
+            }
+        }
+
+        return false;
     }
 }
