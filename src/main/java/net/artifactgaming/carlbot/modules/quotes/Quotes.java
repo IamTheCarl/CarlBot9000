@@ -60,8 +60,6 @@ public class Quotes implements Module, AuthorityRequiring, PersistentModule, Doc
 
     private Logger logger = LoggerFactory.getLogger(Quotes.class);
 
-
-
     @Override
     public Authority[] getRequiredAuthority() {
         return new Authority[] { new QuoteAdmin(), new UseQuotes() };
