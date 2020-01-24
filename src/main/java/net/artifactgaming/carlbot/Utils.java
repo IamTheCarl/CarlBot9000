@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot;
 
+import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.Rating;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.Role;
@@ -206,5 +207,27 @@ public class Utils {
         }
 
         return false;
+    }
+
+    public static Rating toRating(String rating){
+        switch (rating.toUpperCase()){
+            case "Q":
+                return Rating.QUESTIONABLE;
+            case "S":
+                return Rating.SAFE;
+        }
+
+        return Rating.NSFW;
+    }
+
+    public static String fromRating(Rating rating){
+        switch (rating){
+            case QUESTIONABLE:
+                return "Q";
+            case SAFE:
+                return "S";
+        }
+
+        return "NSFW";
     }
 }

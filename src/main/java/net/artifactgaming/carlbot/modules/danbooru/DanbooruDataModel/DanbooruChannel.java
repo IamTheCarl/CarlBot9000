@@ -1,6 +1,17 @@
 package net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel;
 
 public class DanbooruChannel {
+    ///region SQL Column Names
+    public final static String CHANNEL_ID = "CHANNEL_ID";
+
+    public final static String TAGS = "TAGS";
+
+    public final static String MIN_ACCEPTABLE_RATING = "MIN_ACCEPTABLE_RATING";
+
+    public final static String ACTIVE = "ACTIVE";
+    ///endregion
+
+
     private String channelID;
     private String tags;
     private Rating minAcceptableRating;
