@@ -287,7 +287,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         return commands.getCommands();
     }
 
-    public String GetDanbooruApiKey(){
+    public String getDanbooruApiKey(){
         return danbooruApiKey;
     }
 }
