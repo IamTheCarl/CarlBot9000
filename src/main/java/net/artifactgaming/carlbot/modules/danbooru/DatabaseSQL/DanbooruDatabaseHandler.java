@@ -7,7 +7,9 @@ import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.Rating;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.persistence.Table;
+import net.artifactgaming.carlbot.modules.statistics.ChannelStatistic.LifetimeChannelStatistics;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.TextChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +33,7 @@ public class DanbooruDatabaseHandler {
         persistentModuleRef = _persistentModuleRef;
     }
 
-    private List<DanbooruChannel> getGuildDanbooruChannels(Guild guild) throws SQLException {
+    public List<DanbooruChannel> getGuildDanbooruChannels(Guild guild) throws SQLException {
         ArrayList<DanbooruChannel> danbooruChannels = new ArrayList<>();
         Table danbooruChannelTable = getDanbooruChannelTableInGuild(guild);
 
@@ -50,6 +52,51 @@ public class DanbooruDatabaseHandler {
         return danbooruChannels;
     }
 
+    public DanbooruChannel getDanbooruChannel(Guild guild, TextChannel channel) throws SQLException {
+        Table danbooruChannelTable = getDanbooruChannelTableInGuild(guild);
+
+        ResultSet result = danbooruChannelTable.select()
+                .where(DanbooruChannel.CHANNEL_ID, "=", channel.getId())
+                .execute();
+
+        DanbooruChannel danbooruChannel;
+        if (result.next()){
+            String channelID = result.getString(DanbooruChannel.CHANNEL_ID);
+            String tags = result.getString(DanbooruChannel.TAGS);
+            Rating minAcceptableRating = Utils.toRating(result.getString(DanbooruChannel.MIN_ACCEPTABLE_RATING));
+            boolean active = result.getInt(DanbooruChannel.ACTIVE) == 1;
+
+            danbooruChannel = new DanbooruChannel(channelID, tags, minAcceptableRating, active);
+        } else {
+            danbooruChannel = new DanbooruChannel(channel.getId());
+
+            insertNewDanbooruChannel(channel);
+        }
+
+        return danbooruChannel;
+    }
+
+    public void updateDanbooruChannel(Guild guild, DanbooruChannel danbooruChannel) throws SQLException {
+        Table danbooruChannelTable = getDanbooruChannelTableInGuild(guild);
+
+        danbooruChannelTable.update()
+                .where(DanbooruChannel.CHANNEL_ID, "=", danbooruChannel.getChannelID())
+                .set(DanbooruChannel.TAGS, danbooruChannel.getTags())
+                .set(DanbooruChannel.MIN_ACCEPTABLE_RATING, Utils.fromRating(danbooruChannel.getMinAcceptableRating()))
+                .set(DanbooruChannel.ACTIVE, danbooruChannel.isActive() ? "1" : "0")
+                .execute();
+    }
+
+    private void insertNewDanbooruChannel(TextChannel channel) throws SQLException{
+        Table danbooruChannelTable = getDanbooruChannelTableInGuild(channel.getGuild());
+
+        danbooruChannelTable.insert()
+                .set(DanbooruChannel.CHANNEL_ID, channel.getId())
+                .set(DanbooruChannel.TAGS, "")
+                .set(DanbooruChannel.MIN_ACCEPTABLE_RATING, "S")
+                .set(DanbooruChannel.ACTIVE, "0")
+                .execute();
+    }
 
     private Table getDanbooruChannelTableInGuild(Guild guild) throws SQLException {
         Table table = persistenceRef.getGuildTable(guild, persistentModuleRef);

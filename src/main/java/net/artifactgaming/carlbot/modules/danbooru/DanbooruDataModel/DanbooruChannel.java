@@ -28,6 +28,12 @@ public class DanbooruChannel {
         this.active = active;
     }
 
+    public DanbooruChannel(String channelID) {
+        this.channelID = channelID;
+        this.tags = "";
+        this.minAcceptableRating = Rating.SAFE;
+        this.active = false;
+    }
 
     public String getChannelID() {
         return channelID;
