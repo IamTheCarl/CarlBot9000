@@ -6,6 +6,7 @@ import net.artifactgaming.carlbot.modules.authority.Authority;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.danbooru.Authority.ManageDanbooru;
 import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.DanbooruChannel;
+import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.Rating;
 import net.artifactgaming.carlbot.modules.danbooru.DatabaseSQL.DanbooruDatabaseHandler;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
@@ -20,8 +21,6 @@ import java.util.List;
 
 public class Danbooru implements Module, Documented, PersistentModule {
 
-    private String danbooruApiKey;
-
     private Persistence persistence;
 
     private DanbooruDatabaseHandler danbooruDatabaseHandler;
@@ -30,8 +29,6 @@ public class Danbooru implements Module, Documented, PersistentModule {
 
     @Override
     public void setup(CarlBot carlbot) {
-        danbooruApiKey = carlbot.getDanbooruApiKey();
-
         // Get the persistence module.
         persistence = (Persistence) carlbot.getModule(Persistence.class);
 
@@ -41,6 +38,67 @@ public class Danbooru implements Module, Documented, PersistentModule {
         }
 
         danbooruDatabaseHandler = new DanbooruDatabaseHandler(persistence, this);
+    }
+
+    private class SetRatingCommand implements Command, Documented, AuthorityRequiring {
+
+        @Override
+        public String getCallsign() {
+            return "rating";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            if (event.getGuild() == null){
+                event.getTextChannel().sendMessage("This command can only be used in a guild!").queue();
+                return;
+            }
+
+            if (tokens.size() == 0){
+                event.getTextChannel().sendMessage("Set a rating for this channel's danbooru webhook! (S, Q, NSFW)").queue();
+                return;
+            }
+
+            Rating givenRating = toRating(tokens.get(0));
+            DanbooruChannel danbooruChannel = danbooruDatabaseHandler.getDanbooruChannel(event.getGuild(), event.getTextChannel());
+            danbooruChannel.setMinAcceptableRating(givenRating);
+            danbooruDatabaseHandler.updateDanbooruChannel(event.getGuild(), danbooruChannel);
+
+            event.getTextChannel().sendMessage("This channel's minimum acceptable rating is set to " + givenRating + ".").queue();
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Danbooru.this;
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] {new ManageDanbooru()};
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Set the ratings which the webhook will fetch. (S, Q, NSFW)";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "rating";
+        }
+
+        private Rating toRating(String input){
+            input = input.toUpperCase().trim();
+
+            if (input.equals("QUESTIONABLE") || input.equals("Q")){
+                return Rating.QUESTIONABLE;
+            }
+            if (input.equals("NSFW") || input.equals("NOT SAFE FOR WORK")){
+                return Rating.NSFW;
+            }
+
+            return Rating.SAFE;
+        }
     }
 
     private class SetTagsCommand implements Command, Documented, AuthorityRequiring {
