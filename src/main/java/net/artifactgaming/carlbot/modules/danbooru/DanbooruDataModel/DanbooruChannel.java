@@ -23,7 +23,7 @@ public class DanbooruChannel {
 
     public DanbooruChannel(String channelID, String tags, Rating minAcceptableRating, boolean active) {
         this.channelID = channelID;
-        this.tags = tags;
+        this.tags = tags.trim();
         this.minAcceptableRating = minAcceptableRating;
         this.active = active;
     }
@@ -48,7 +48,7 @@ public class DanbooruChannel {
     }
 
     public void setTags(String tags) {
-        this.tags = tags;
+        this.tags = tags.trim();
     }
 
     public Rating getMinAcceptableRating() {
@@ -65,5 +65,12 @@ public class DanbooruChannel {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    /**
+     * Also used to check if this channel is configured.
+     */
+    public boolean emptyTag(){
+        return tags.isEmpty();
     }
 }

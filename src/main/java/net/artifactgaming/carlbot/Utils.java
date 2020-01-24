@@ -220,8 +220,8 @@ public class Utils {
         return Rating.NSFW;
     }
 
-    public static String fromRating(Rating rating){
-        switch (rating){
+    public static String fromRating(Rating rating) {
+        switch (rating) {
             case QUESTIONABLE:
                 return "Q";
             case SAFE:
