@@ -117,7 +117,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
 
             DanbooruChannel danbooruChannel = danbooruDatabaseHandler.getDanbooruChannel(event.getGuild(), event.getTextChannel());
 
-            String tags = rawString.substring(Utils.CALLSIGN.length() + "danbooru tags ".length()).trim();
+            String tags = rawString.substring(Utils.CALLSIGN.length() + "danbooru tags ".length() - 1).trim();
 
             danbooruChannel.setTags(tags);
 
@@ -256,6 +256,10 @@ public class Danbooru implements Module, Documented, PersistentModule {
         DanbooruCommands(CarlBot carlbot) {
             commands = new CommandHandler(carlbot);
 
+            commands.addCommand(new InfoCommand());
+            commands.addCommand(new SetRatingCommand());
+            commands.addCommand(new SetTagsCommand());
+            commands.addCommand(new ToggleCommand());
         }
 
         @Override
@@ -277,7 +281,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
 
     @Override
     public Command[] getCommands(CarlBot carlbot) {
-        return new Command[0];
+        return new Command[] {new DanbooruCommands(carlbot)};
     }
 
     @Override

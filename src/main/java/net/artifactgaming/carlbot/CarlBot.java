@@ -5,6 +5,7 @@ import net.artifactgaming.carlbot.listeners.OnGuildMember;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.listeners.MessageReader;
+import net.artifactgaming.carlbot.modules.danbooru.Danbooru;
 import net.artifactgaming.carlbot.modules.games.Games;
 import net.artifactgaming.carlbot.modules.pelt.Pelt;
 import net.artifactgaming.carlbot.modules.purge.Purge;
@@ -74,6 +75,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         CarlBot bot = new CarlBot();
         bot.loadConfig(new File("./main_config.json"));
 
+        bot.addModule(new Danbooru());
         bot.addModule(new Echo());
         bot.addModule(new Quotes());
         bot.addModule(new AuthorityManagement());

@@ -108,7 +108,7 @@ public class DanbooruDatabaseHandler {
             danbooruChannelTable.alter().add()
                     .pushValue(DanbooruChannel.CHANNEL_ID + " varchar")
                     .pushValue(DanbooruChannel.TAGS + " varchar")
-                    .pushValue(DanbooruChannel.MIN_ACCEPTABLE_RATING + " float")
+                    .pushValue(DanbooruChannel.MIN_ACCEPTABLE_RATING + " varchar")
                     .pushValue(DanbooruChannel.ACTIVE + " int")
                     .execute();
         }
