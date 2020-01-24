@@ -42,6 +42,7 @@ import java.util.*;
 
 public class CarlBot extends ListenerAdapter implements Runnable {
 
+    private String danbooruApiKey = null;
     private String token = null;
     private ArrayList<Module> modules = new ArrayList<>();
     private HashMap<Class, Module> moduleLookup = new HashMap<>();
@@ -110,6 +111,8 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         token = json.getString("token");
 
         JSONArray owners = json.getJSONArray("owners");
+
+        danbooruApiKey = json.getString("danbooru_api_key");
 
         // There's no map feature, so we gotta unroll this ourselves.
         for (int i = 0; i < owners.size(); i++) {
@@ -282,5 +285,9 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
     public Collection<Command> getCommands() {
         return commands.getCommands();
+    }
+
+    public String GetDanbooruApiKey(){
+        return danbooruApiKey;
     }
 }
