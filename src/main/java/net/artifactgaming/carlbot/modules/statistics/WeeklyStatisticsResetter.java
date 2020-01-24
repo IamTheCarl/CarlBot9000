@@ -26,7 +26,7 @@ public class WeeklyStatisticsResetter {
      * How many days must pass for a weekly statistic to reset.
      * Keep it to 7, unless for debug.
      */
-    public final static int DAYS_TO_RESET = 0;
+    public final static int DAYS_TO_RESET = 7;
 
     // TODO: Possible refactor on the 'lifetimeChannelStatisticsToMergeList' ArrayList?
 
