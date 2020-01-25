@@ -7,7 +7,10 @@ import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
+import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 
 public class Utils {
@@ -228,5 +231,36 @@ public class Utils {
         }
 
         return "NSFW";
+    }
+
+    public static boolean isWithinMinRating(Rating target, Rating minRating){
+        return ratingToNumber(minRating) >= ratingToNumber(target);
+    }
+
+    private static int ratingToNumber(Rating rating) {
+        switch (rating) {
+            case QUESTIONABLE:
+                return 1;
+            case SAFE:
+                return 0;
+        }
+
+        return 2;
+    }
+
+    public static URI appendUri(String uri, String appendQuery) throws URISyntaxException {
+        URI oldUri = new URI(uri);
+
+        String newQuery = oldUri.getQuery();
+        if (newQuery == null) {
+            newQuery = appendQuery;
+        } else {
+            newQuery += "&" + appendQuery;
+        }
+
+        URI newUri = new URI(oldUri.getScheme(), oldUri.getAuthority(),
+                oldUri.getPath(), newQuery, oldUri.getFragment());
+
+        return newUri;
     }
 }

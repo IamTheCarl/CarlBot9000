@@ -7,6 +7,8 @@ import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.danbooru.Authority.ManageDanbooru;
 import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.DanbooruChannel;
 import net.artifactgaming.carlbot.modules.danbooru.DatabaseSQL.DanbooruDatabaseHandler;
+import net.artifactgaming.carlbot.modules.danbooru.WebHandler.DanbooruPostModel.DanbooruPost;
+import net.artifactgaming.carlbot.modules.danbooru.WebHandler.InvalidTagsException;
 import net.artifactgaming.carlbot.modules.danbooru.WebHandler.Requestor;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
@@ -39,6 +41,56 @@ public class Danbooru implements Module, Documented, PersistentModule {
 
         danbooruDatabaseHandler = new DanbooruDatabaseHandler(persistence, this);
         danbooruRequestor = new Requestor(carlbot);
+    }
+
+    private class FetchCommand implements Command, Documented {
+
+        @Override
+        public String getCallsign() {
+            return "fetch";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            String tags = rawString.substring(Utils.CALLSIGN.length() + "danbooru fetch ".length() - 1).trim();
+
+            if (tags.trim().isEmpty()){
+                event.getTextChannel().sendMessage("Include a tag to search for!").queue();
+                return;
+            }
+
+            try {
+                List<DanbooruPost> latestPosts = danbooruRequestor.fetchLatestPosts(tags);
+
+                // Send the first safe post
+                for (DanbooruPost post: latestPosts) {
+
+                    if (Utils.isWithinMinRating(post.getRating(), Rating.SAFE)){
+                        event.getTextChannel().sendMessage(post.getFileUrl()).queue();
+                        return;
+                    }
+                }
+                // No recent posts that are safe.
+                event.getTextChannel().sendMessage("There are no recent posts that are marked as safe!").queue();
+            } catch (InvalidTagsException e) {
+                event.getTextChannel().sendMessage("Tag to search for is invalid!").queue();
+            }
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Danbooru.this;
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Fetch the latest danbooru posts by tag.";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "fetch";
+        }
     }
 
     private class SetRatingCommand implements Command, Documented, AuthorityRequiring {
@@ -261,6 +313,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
             commands.addCommand(new SetRatingCommand());
             commands.addCommand(new SetTagsCommand());
             commands.addCommand(new ToggleCommand());
+            commands.addCommand(new FetchCommand());
         }
 
         @Override
