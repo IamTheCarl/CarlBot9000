@@ -1,6 +1,6 @@
 package net.artifactgaming.carlbot;
 
-import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.Rating;
+import net.artifactgaming.carlbot.modules.danbooru.Rating;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.Role;
@@ -9,7 +9,6 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 import java.util.List;
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 
 public class Utils {
 

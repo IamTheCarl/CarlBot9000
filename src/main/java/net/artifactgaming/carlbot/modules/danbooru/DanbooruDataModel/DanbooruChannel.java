@@ -1,6 +1,7 @@
 package net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel;
 
 import net.artifactgaming.carlbot.Utils;
+import net.artifactgaming.carlbot.modules.danbooru.Rating;
 
 public class DanbooruChannel {
     ///region SQL Column Names
