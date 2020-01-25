@@ -8,6 +8,7 @@ import net.artifactgaming.carlbot.modules.danbooru.Authority.ManageDanbooru;
 import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.DanbooruChannel;
 import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.Rating;
 import net.artifactgaming.carlbot.modules.danbooru.DatabaseSQL.DanbooruDatabaseHandler;
+import net.artifactgaming.carlbot.modules.danbooru.WebHandler.Requestor;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
@@ -15,7 +16,6 @@ import net.artifactgaming.carlbot.modules.statistics.Statistics;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.nio.ch.Util;
 
 import java.util.List;
 
@@ -26,6 +26,8 @@ public class Danbooru implements Module, Documented, PersistentModule {
     private DanbooruDatabaseHandler danbooruDatabaseHandler;
 
     private Logger logger = LoggerFactory.getLogger(Danbooru.class);
+
+    private Requestor danbooruRequestor;
 
     @Override
     public void setup(CarlBot carlbot) {
@@ -38,6 +40,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
         }
 
         danbooruDatabaseHandler = new DanbooruDatabaseHandler(persistence, this);
+        danbooruRequestor = new Requestor(carlbot);
     }
 
     private class SetRatingCommand implements Command, Documented, AuthorityRequiring {
