@@ -1,5 +1,7 @@
 package net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel;
 
+import net.artifactgaming.carlbot.Utils;
+
 public class DanbooruChannel {
     ///region SQL Column Names
     public final static String CHANNEL_ID = "CHANNEL_ID";
@@ -9,6 +11,8 @@ public class DanbooruChannel {
     public final static String MIN_ACCEPTABLE_RATING = "MIN_ACCEPTABLE_RATING";
 
     public final static String ACTIVE = "ACTIVE";
+
+    public final static String LAST_IMAGE_SENT_ID = "LAST_IMAGE_SENT";
     ///endregion
 
 
@@ -21,18 +25,22 @@ public class DanbooruChannel {
      */
     private boolean active;
 
-    public DanbooruChannel(String channelID, String tags, Rating minAcceptableRating, boolean active) {
+    private String lastImageSentID;
+
+    public DanbooruChannel(String channelID, String tags, Rating minAcceptableRating, boolean active, String lastImageSentID) {
         this.channelID = channelID;
         this.tags = tags.trim();
         this.minAcceptableRating = minAcceptableRating;
         this.active = active;
+        this.lastImageSentID = lastImageSentID;
     }
 
     public DanbooruChannel(String channelID) {
         this.channelID = channelID;
-        this.tags = "";
+        this.tags = Utils.STRING_EMPTY;
         this.minAcceptableRating = Rating.SAFE;
         this.active = false;
+        lastImageSentID = Utils.STRING_EMPTY;
     }
 
     public String getChannelID() {
@@ -72,5 +80,13 @@ public class DanbooruChannel {
      */
     public boolean emptyTag(){
         return tags.isEmpty();
+    }
+
+    public String getLastImageSentID() {
+        return lastImageSentID;
+    }
+
+    public void setLastImageSentID(String lastImageSentID) {
+        this.lastImageSentID = lastImageSentID;
     }
 }

@@ -44,8 +44,9 @@ public class DanbooruDatabaseHandler {
             String tags = result.getString(DanbooruChannel.TAGS);
             Rating minAcceptableRating = Utils.toRating(result.getString(DanbooruChannel.MIN_ACCEPTABLE_RATING));
             boolean active = result.getInt(DanbooruChannel.ACTIVE) == 1;
+            String lastImageSentID = result.getString(DanbooruChannel.LAST_IMAGE_SENT_ID);
 
-            DanbooruChannel danbooruChannel = new DanbooruChannel(channelID, tags, minAcceptableRating, active);
+            DanbooruChannel danbooruChannel = new DanbooruChannel(channelID, tags, minAcceptableRating, active, lastImageSentID);
             danbooruChannels.add(danbooruChannel);
         }
 
@@ -65,8 +66,9 @@ public class DanbooruDatabaseHandler {
             String tags = result.getString(DanbooruChannel.TAGS);
             Rating minAcceptableRating = Utils.toRating(result.getString(DanbooruChannel.MIN_ACCEPTABLE_RATING));
             boolean active = result.getInt(DanbooruChannel.ACTIVE) == 1;
+            String lastImageSentID = result.getString(DanbooruChannel.LAST_IMAGE_SENT_ID);
 
-            danbooruChannel = new DanbooruChannel(channelID, tags, minAcceptableRating, active);
+            danbooruChannel = new DanbooruChannel(channelID, tags, minAcceptableRating, active, lastImageSentID);
         } else {
             danbooruChannel = new DanbooruChannel(channel.getId());
 
@@ -84,6 +86,7 @@ public class DanbooruDatabaseHandler {
                 .set(DanbooruChannel.TAGS, danbooruChannel.getTags())
                 .set(DanbooruChannel.MIN_ACCEPTABLE_RATING, Utils.fromRating(danbooruChannel.getMinAcceptableRating()))
                 .set(DanbooruChannel.ACTIVE, danbooruChannel.isActive() ? "1" : "0")
+                .set(DanbooruChannel.LAST_IMAGE_SENT_ID, danbooruChannel.getLastImageSentID())
                 .execute();
     }
 
@@ -92,9 +95,10 @@ public class DanbooruDatabaseHandler {
 
         danbooruChannelTable.insert()
                 .set(DanbooruChannel.CHANNEL_ID, channel.getId())
-                .set(DanbooruChannel.TAGS, "")
+                .set(DanbooruChannel.TAGS, Utils.STRING_EMPTY)
                 .set(DanbooruChannel.MIN_ACCEPTABLE_RATING, "S")
                 .set(DanbooruChannel.ACTIVE, "0")
+                .set(DanbooruChannel.LAST_IMAGE_SENT_ID, Utils.STRING_EMPTY)
                 .execute();
     }
 
@@ -110,6 +114,7 @@ public class DanbooruDatabaseHandler {
                     .pushValue(DanbooruChannel.TAGS + " varchar")
                     .pushValue(DanbooruChannel.MIN_ACCEPTABLE_RATING + " varchar")
                     .pushValue(DanbooruChannel.ACTIVE + " int")
+                    .pushValue(DanbooruChannel.LAST_IMAGE_SENT_ID + " varchar")
                     .execute();
         }
 
