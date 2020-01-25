@@ -1,5 +1,6 @@
 package net.artifactgaming.carlbot;
 
+import net.artifactgaming.carlbot.credentials.DanbooruLogin;
 import net.artifactgaming.carlbot.listeners.OnCarlBotReady;
 import net.artifactgaming.carlbot.listeners.OnGuildMember;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
@@ -40,10 +41,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class CarlBot extends ListenerAdapter implements Runnable {
 
-    private String danbooruApiKey = null;
+    private DanbooruLogin danbooruLoginDetails;
+
     private String token = null;
     private ArrayList<Module> modules = new ArrayList<>();
     private HashMap<Class, Module> moduleLookup = new HashMap<>();
@@ -106,23 +109,31 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         onMessageReceivedListeners.add(onMessageReceived);
     }
 
-    public void loadConfig(File file) throws IOException {
+    private void loadConfig(File file) throws IOException {
+        ///region
+        Consumer<JSONObject> loadDanbooruCredential = jsonObject -> {
+            String danbooruApiKey = jsonObject.getString("danbooru_api_key");
+            String danbooruUsername = jsonObject.getString("danbooru_username");
+
+            danbooruLoginDetails = new DanbooruLogin(danbooruUsername, danbooruApiKey);
+        };
+        ///endregion
+
         String rawJson = readFile(file.getPath());
         JSONObject json = (JSONObject) JSONSerializer.toJSON(rawJson);
 
         token = json.getString("token");
-
         JSONArray owners = json.getJSONArray("owners");
-
-        danbooruApiKey = json.getString("danbooru_api_key");
 
         // There's no map feature, so we gotta unroll this ourselves.
         for (int i = 0; i < owners.size(); i++) {
             ownerIDs.add(owners.getString(i));
         }
+
+        loadDanbooruCredential.accept(json);
     }
 
-    public void addModule(Module module) {
+    private void addModule(Module module) {
         modules.add(module);
         moduleLookup.put(module.getClass(), module);
 
@@ -289,7 +300,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         return commands.getCommands();
     }
 
-    public String getDanbooruApiKey(){
-        return danbooruApiKey;
+    public DanbooruLogin getDanbooruLoginDetails() {
+        return danbooruLoginDetails;
     }
 }

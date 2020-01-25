@@ -2,6 +2,7 @@ package net.artifactgaming.carlbot.modules.danbooru.WebHandler;
 
 import net.artifactgaming.carlbot.CarlBot;
 import net.artifactgaming.carlbot.Utils;
+import net.artifactgaming.carlbot.credentials.DanbooruLogin;
 import net.artifactgaming.carlbot.modules.danbooru.Rating;
 import net.artifactgaming.carlbot.modules.danbooru.WebHandler.DanbooruPostModel.DanbooruPost;
 import net.sf.json.JSONArray;
@@ -10,11 +11,8 @@ import net.sf.json.JSONSerializer;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,10 +25,10 @@ public class Requestor {
 
     private static final String DANBOORU_POSTS_SITE = "https://danbooru.donmai.us/posts.json";
 
-    private final String apiKey;
+    private final DanbooruLogin loginDetails;
 
     public Requestor(CarlBot carlBot){
-        apiKey = carlBot.getDanbooruApiKey();
+        loginDetails = carlBot.getDanbooruLoginDetails();
     }
 
     public List<DanbooruPost> fetchLatestPosts(String tags) throws Exception {
@@ -39,7 +37,7 @@ public class Requestor {
         JSONArray json = (JSONArray) JSONSerializer.toJSON(resultString);
 
         if (json.size() == 0){
-            throw new InvalidTagsException();
+            throw new EmptyResultException();
         }
 
         ArrayList<DanbooruPost> postsResults = new ArrayList<>();
@@ -57,16 +55,15 @@ public class Requestor {
     }
 
     private String getRequestResult(String tags) throws Exception {
-        URI uriWithParams = Utils.appendUri(DANBOORU_POSTS_SITE, "tags=" + tags);
+        URI uriWithParams = Utils.appendUri(DANBOORU_POSTS_SITE, "login=" + loginDetails.getUsername());
+        uriWithParams = Utils.appendUri(uriWithParams.toString(), "api_key=" + loginDetails.getApiKey());
+        uriWithParams = Utils.appendUri(uriWithParams.toString(), "tags=" + tags);
         uriWithParams = Utils.appendUri(uriWithParams.toString(), "limit=" + REQUEST_RESULT_LIMITS);
 
         URL urlWithParams = uriWithParams.toURL();
 
         HttpsURLConnection connection = (HttpsURLConnection) urlWithParams.openConnection();
         connection.setRequestMethod("GET");
-
-        // TODO: Fix Authorization
-        //connection.setRequestProperty ("Authorization", "API Key " + apiKey);
 
         BufferedReader rd = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         StringBuilder requestResult = new StringBuilder();

@@ -16,6 +16,7 @@ The content of the json file should be this:
 {
     "token": "The bot's discord token",
     "owners": ["Owner(s) of this bot in string"],
-    "danbooru_api_key": "API KEY FOR DANBOORU"
+    "danbooru_api_key": "API KEY FOR DANBOORU",
+    "danbooru_username": "YOUR DANBOORU USERNAME"
 }
 ```

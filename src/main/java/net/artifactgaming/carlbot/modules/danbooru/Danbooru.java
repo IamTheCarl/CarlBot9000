@@ -5,10 +5,11 @@ import net.artifactgaming.carlbot.Module;
 import net.artifactgaming.carlbot.modules.authority.Authority;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.danbooru.Authority.ManageDanbooru;
+import net.artifactgaming.carlbot.modules.danbooru.Authority.UseDanbooru;
 import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.DanbooruChannel;
 import net.artifactgaming.carlbot.modules.danbooru.DatabaseSQL.DanbooruDatabaseHandler;
 import net.artifactgaming.carlbot.modules.danbooru.WebHandler.DanbooruPostModel.DanbooruPost;
-import net.artifactgaming.carlbot.modules.danbooru.WebHandler.InvalidTagsException;
+import net.artifactgaming.carlbot.modules.danbooru.WebHandler.EmptyResultException;
 import net.artifactgaming.carlbot.modules.danbooru.WebHandler.Requestor;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
@@ -43,7 +44,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
         danbooruRequestor = new Requestor(carlbot);
     }
 
-    private class FetchCommand implements Command, Documented {
+    private class FetchCommand implements Command, Documented, AuthorityRequiring {
 
         @Override
         public String getCallsign() {
@@ -72,8 +73,8 @@ public class Danbooru implements Module, Documented, PersistentModule {
                 }
                 // No recent posts that are safe.
                 event.getTextChannel().sendMessage("There are no recent posts that are marked as safe!").queue();
-            } catch (InvalidTagsException e) {
-                event.getTextChannel().sendMessage("Tag to search for is invalid!").queue();
+            } catch (EmptyResultException e) {
+                event.getTextChannel().sendMessage("No results from the search tags. Invalid tag?").queue();
             }
         }
 
@@ -90,6 +91,11 @@ public class Danbooru implements Module, Documented, PersistentModule {
         @Override
         public String getDocumentationCallsign() {
             return "fetch";
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new UseDanbooru() };
         }
     }
 
