@@ -54,6 +54,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
         }
 
         danbooruRequester = new Requester(carlbot);
+        danbooruDatabaseHandler = new DanbooruDatabaseHandler(persistence, this);
         ChannelWebhook.setReference(danbooruRequester, danbooruDatabaseHandler);
     }
 
@@ -398,7 +399,6 @@ public class Danbooru implements Module, Documented, PersistentModule {
 
         @Override
         public void onCarlBotReady(ReadyEvent event) {
-            danbooruDatabaseHandler = new DanbooruDatabaseHandler(persistence, Danbooru.this);
             channelWebhooks = new ArrayList<>();
 
             List<Guild> guilds = event.getJDA().getGuilds();
