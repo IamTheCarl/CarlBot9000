@@ -2,6 +2,7 @@ package net.artifactgaming.carlbot.modules.danbooru;
 import net.artifactgaming.carlbot.*;
 
 import net.artifactgaming.carlbot.Module;
+import net.artifactgaming.carlbot.listeners.OnCarlBotReady;
 import net.artifactgaming.carlbot.modules.authority.Authority;
 import net.artifactgaming.carlbot.modules.authority.AuthorityRequiring;
 import net.artifactgaming.carlbot.modules.danbooru.Authority.ManageDanbooru;
@@ -15,10 +16,14 @@ import net.artifactgaming.carlbot.modules.danbooru.Webhook.ChannelWebhook;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.core.events.ReadyEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +39,10 @@ public class Danbooru implements Module, Documented, PersistentModule {
 
     private ArrayList<ChannelWebhook> channelWebhooks;
 
+    public Danbooru(){
+        CarlBot.addOnCarlbotReadyListener(new OnCarlBotReadyEvent());
+    }
+
     @Override
     public void setup(CarlBot carlbot) {
         // Get the persistence module.
@@ -44,10 +53,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
             carlbot.crash();
         }
 
-        danbooruDatabaseHandler = new DanbooruDatabaseHandler(persistence, this);
         danbooruRequester = new Requester(carlbot);
-
-        channelWebhooks = new ArrayList<>();
         ChannelWebhook.setReference(danbooruRequester, danbooruDatabaseHandler);
     }
 
@@ -242,6 +248,13 @@ public class Danbooru implements Module, Documented, PersistentModule {
             boolean isActive = !danbooruChannel.isActive();
             danbooruChannel.setActive(isActive);
 
+            if (isActive){
+                ChannelWebhook channelWebhook = new ChannelWebhook(event.getTextChannel(), Danbooru.this);
+                channelWebhooks.add(channelWebhook);
+            } else {
+                removeChannelWebhookByID(event.getTextChannel().getId());
+            }
+
             danbooruDatabaseHandler.updateDanbooruChannel(event.getGuild(), danbooruChannel);
             event.getTextChannel().sendMessage("Danbooru webhook for this channel is now " + (isActive ? "enabled." : "disabled.")).queue();
         }
@@ -361,7 +374,62 @@ public class Danbooru implements Module, Documented, PersistentModule {
         return "danbooru";
     }
 
+    private void removeChannelWebhookByID(String channelID){
+        ChannelWebhook channelToRemove = null;
+
+        for (ChannelWebhook channelWebhook : channelWebhooks) {
+            if (channelWebhook.getChannelID().equals(channelID)){
+                channelToRemove = channelWebhook;
+                break;
+            }
+        }
+
+        if (channelToRemove != null){
+            channelToRemove.garbageCollect();
+        }
+        // TODO: Something if we can't find the channel to remove.
+    }
+
     public void removeChannelWebhook(ChannelWebhook channelWebhook){
         channelWebhooks.remove(channelWebhook);
+    }
+
+    private class OnCarlBotReadyEvent implements OnCarlBotReady {
+
+        @Override
+        public void onCarlBotReady(ReadyEvent event) {
+            danbooruDatabaseHandler = new DanbooruDatabaseHandler(persistence, Danbooru.this);
+            channelWebhooks = new ArrayList<>();
+
+            List<Guild> guilds = event.getJDA().getGuilds();
+            try {
+                for (Guild guild: guilds) {
+                    loadWebhookChannelFromGuild(guild);
+                }
+            } catch (SQLException e) {
+                logger.error("Failed to load schedules from guilds.");
+            }
+        }
+
+        private void loadWebhookChannelFromGuild(Guild guild) throws SQLException {
+            List<DanbooruChannel> danbooruChannels = danbooruDatabaseHandler.getGuildDanbooruChannels(guild);
+
+            for (DanbooruChannel danbooruChannel: danbooruChannels){
+                if (!danbooruChannel.isActive()){
+                    continue;
+                }
+
+                TextChannel targetChannel = guild.getTextChannelById(danbooruChannel.getChannelID());
+
+                if (targetChannel == null){
+                    danbooruDatabaseHandler.deleteDanbooruChannelFromGuild(guild, danbooruChannel);
+                    continue;
+                }
+
+                ChannelWebhook channelWebhook = new ChannelWebhook(targetChannel, Danbooru.this);
+                channelWebhooks.add(channelWebhook);
+            }
+        }
+
     }
 }

@@ -119,4 +119,9 @@ public class DanbooruDatabaseHandler {
 
         return danbooruChannelTable;
     }
+
+    public void deleteDanbooruChannelFromGuild(Guild guild, DanbooruChannel danbooruChannel) throws SQLException {
+        Table danbooruChannelTable = getDanbooruChannelTableInGuild(guild);
+        danbooruChannelTable.delete().where(DanbooruChannel.CHANNEL_ID, "=", danbooruChannel.getChannelID()).execute();
+    }
 }
