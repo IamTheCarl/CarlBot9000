@@ -10,7 +10,8 @@ import net.artifactgaming.carlbot.modules.danbooru.DanbooruDataModel.DanbooruCha
 import net.artifactgaming.carlbot.modules.danbooru.DatabaseSQL.DanbooruDatabaseHandler;
 import net.artifactgaming.carlbot.modules.danbooru.WebHandler.DanbooruPostModel.DanbooruPost;
 import net.artifactgaming.carlbot.modules.danbooru.WebHandler.EmptyResultException;
-import net.artifactgaming.carlbot.modules.danbooru.WebHandler.Requestor;
+import net.artifactgaming.carlbot.modules.danbooru.WebHandler.Requester;
+import net.artifactgaming.carlbot.modules.danbooru.Webhook.ChannelWebhook;
 import net.artifactgaming.carlbot.modules.persistence.Persistence;
 import net.artifactgaming.carlbot.modules.persistence.PersistentModule;
 import net.artifactgaming.carlbot.modules.selfdocumentation.Documented;
@@ -18,6 +19,7 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Danbooru implements Module, Documented, PersistentModule {
@@ -28,7 +30,9 @@ public class Danbooru implements Module, Documented, PersistentModule {
 
     private Logger logger = LoggerFactory.getLogger(Danbooru.class);
 
-    private Requestor danbooruRequestor;
+    private Requester danbooruRequester;
+
+    private ArrayList<ChannelWebhook> channelWebhooks;
 
     @Override
     public void setup(CarlBot carlbot) {
@@ -41,7 +45,10 @@ public class Danbooru implements Module, Documented, PersistentModule {
         }
 
         danbooruDatabaseHandler = new DanbooruDatabaseHandler(persistence, this);
-        danbooruRequestor = new Requestor(carlbot);
+        danbooruRequester = new Requester(carlbot);
+
+        channelWebhooks = new ArrayList<>();
+        ChannelWebhook.setReference(danbooruRequester, danbooruDatabaseHandler);
     }
 
     private class FetchCommand implements Command, Documented, AuthorityRequiring {
@@ -61,7 +68,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
             }
 
             try {
-                List<DanbooruPost> latestPosts = danbooruRequestor.fetchLatestPosts(tags);
+                List<DanbooruPost> latestPosts = danbooruRequester.fetchLatestPosts(tags);
 
                 // Send the first safe post
                 for (DanbooruPost post: latestPosts) {
@@ -352,5 +359,9 @@ public class Danbooru implements Module, Documented, PersistentModule {
     @Override
     public String getDocumentationCallsign() {
         return "danbooru";
+    }
+
+    public void removeChannelWebhook(ChannelWebhook channelWebhook){
+        channelWebhooks.remove(channelWebhook);
     }
 }

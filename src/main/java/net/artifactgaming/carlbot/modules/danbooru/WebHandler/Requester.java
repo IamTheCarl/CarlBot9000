@@ -16,7 +16,7 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Requestor {
+public class Requester {
 
     /**
      * How much results (latest) can it fetch at once.
@@ -27,7 +27,7 @@ public class Requestor {
 
     private final DanbooruLogin loginDetails;
 
-    public Requestor(CarlBot carlBot){
+    public Requester(CarlBot carlBot){
         loginDetails = carlBot.getDanbooruLoginDetails();
     }
 
