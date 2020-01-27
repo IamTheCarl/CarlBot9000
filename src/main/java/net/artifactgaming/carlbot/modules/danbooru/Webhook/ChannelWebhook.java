@@ -75,6 +75,7 @@ public class ChannelWebhook {
 
             boolean loggedNewPost = false;
             String bannedTags = targetChannel.getBannedTags().trim();
+            String newPostID = targetChannel.getLastImageSentID();
 
             for (DanbooruPost post : danbooruPosts){
                 if (post.getId().equals(targetChannel.getLastImageSentID())){
@@ -92,10 +93,12 @@ public class ChannelWebhook {
 
                     if (!loggedNewPost){
                         loggedNewPost = true;
-                        targetChannel.setLastImageSentID(post.getId());
+                        newPostID = post.getId();
                     }
                 }
             }
+
+            targetChannel.setLastImageSentID(newPostID);
 
             danbooruDatabaseHandlerRef.updateDanbooruChannel(targetGuild, targetChannel);
         } catch (SQLException e){
