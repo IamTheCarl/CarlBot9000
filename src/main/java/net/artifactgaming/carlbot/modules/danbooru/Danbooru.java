@@ -23,6 +23,7 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.print.Doc;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +57,55 @@ public class Danbooru implements Module, Documented, PersistentModule {
         danbooruRequester = new Requester(carlbot);
         danbooruDatabaseHandler = new DanbooruDatabaseHandler(persistence, this);
         ChannelWebhook.setReference(danbooruRequester, danbooruDatabaseHandler);
+    }
+
+    private class BanTagsCommand implements Command, Documented, AuthorityRequiring {
+
+        @Override
+        public String getCallsign() {
+            return "banTags";
+        }
+
+        @Override
+        public void runCommand(MessageReceivedEvent event, String rawString, List<String> tokens) throws Exception {
+            if (event.getGuild() == null){
+                event.getTextChannel().sendMessage("This command can only be used in a guild!").queue();
+                return;
+            }
+
+            DanbooruChannel danbooruChannel = danbooruDatabaseHandler.getDanbooruChannel(event.getGuild(), event.getTextChannel());
+
+            String bannedTags = rawString.substring(Utils.CALLSIGN.length() + "danbooru banTags ".length() - 1).trim();
+
+            danbooruChannel.setBannedTags(bannedTags);
+            danbooruDatabaseHandler.updateDanbooruChannel(event.getGuild(), danbooruChannel);
+
+            if (bannedTags.isEmpty()){
+                event.getTextChannel().sendMessage("Removed all banned tags from this channel!").queue();
+            } else {
+                event.getTextChannel().sendMessage("Set banned tags to `" + bannedTags + "`.").queue();
+            }
+        }
+
+        @Override
+        public Module getParentModule() {
+            return Danbooru.this;
+        }
+
+        @Override
+        public Authority[] getRequiredAuthority() {
+            return new Authority[] { new ManageDanbooru()};
+        }
+
+        @Override
+        public String getDocumentation() {
+            return "Ban specific tags from appearing in the webhook";
+        }
+
+        @Override
+        public String getDocumentationCallsign() {
+            return "banTags";
+        }
     }
 
     private class FetchCommand implements Command, Documented, AuthorityRequiring {
@@ -306,6 +356,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
                 replyString.append("TAGS: \"").append(danbooruChannel.getTags()).append("\"").append(Utils.NEWLINE);
                 replyString.append("MIN ACCEPTABLE RATING: \"").append(danbooruChannel.getMinAcceptableRating()).append("\"").append(Utils.NEWLINE);
                 replyString.append("Is Active: ").append(danbooruChannel.isActive() ? "YES" : "NO").append(Utils.NEWLINE);
+                replyString.append("Banned Tags: ").append(danbooruChannel.getBannedTags()).append(Utils.NEWLINE);
 
                 replyString.append("```");
 
@@ -341,6 +392,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
             commands.addCommand(new SetTagsCommand());
             commands.addCommand(new ToggleCommand());
             commands.addCommand(new FetchCommand());
+            commands.addCommand(new BanTagsCommand());
         }
 
         @Override
