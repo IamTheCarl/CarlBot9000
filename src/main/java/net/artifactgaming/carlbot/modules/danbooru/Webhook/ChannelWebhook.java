@@ -74,14 +74,20 @@ public class ChannelWebhook {
             List<DanbooruPost> danbooruPosts = danbooruRequesterRef.fetchLatestPosts(targetChannel.getTags());
 
             boolean loggedNewPost = false;
+            String bannedTags = targetChannel.getBannedTags().trim();
 
             for (DanbooruPost post : danbooruPosts){
                 if (post.getId().equals(targetChannel.getLastImageSentID())){
                     break;
                 }
 
-                if (Utils.isWithinMinRating(post.getRating(), targetChannel.getMinAcceptableRating())){
+                if (!bannedTags.isEmpty()){
+                    if (Utils.containsBannedTags(post.getTags(), bannedTags)){
+                        continue;
+                    }
+                }
 
+                if (Utils.isWithinMinRating(post.getRating(), targetChannel.getMinAcceptableRating())){
                     bindedChannel.sendMessage(post.getFileUrl()).queue();
 
                     if (!loggedNewPost){

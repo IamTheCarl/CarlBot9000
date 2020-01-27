@@ -263,4 +263,22 @@ public class Utils {
 
         return newUri;
     }
+
+    /**
+     * For danbooru module; Check if a tag contains another tag.
+     * @param targetTag
+     * @param bannedTagsStr
+     * @return
+     */
+    public static boolean containsBannedTags(String targetTag, String bannedTagsStr){
+        String[] bannedTags = bannedTagsStr.trim().split(" ");
+
+        for (String bannedTag: bannedTags){
+            if (targetTag.contains(bannedTag)){
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
