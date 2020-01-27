@@ -9,10 +9,13 @@ public class DanbooruPost {
 
     private Rating rating;
 
-    public DanbooruPost(String id, String fileUrl, Rating rating) {
+    private String tags;
+
+    public DanbooruPost(String id, String fileUrl, Rating rating, String tags) {
         this.id = id;
         this.fileUrl = fileUrl;
         this.rating = rating;
+        this.tags = tags;
     }
 
     public String getId() {
@@ -37,5 +40,13 @@ public class DanbooruPost {
 
     public void setRating(Rating rating) {
         this.rating = rating;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 }

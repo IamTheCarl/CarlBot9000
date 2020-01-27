@@ -47,8 +47,9 @@ public class Requester {
             String postId = String.valueOf(currentPostJson.getInt("id"));
             String fileUrl = currentPostJson.getString("large_file_url");
             Rating rating = Utils.toRating(currentPostJson.getString("rating"));
+            String postTags = currentPostJson.getString("tag_string");
 
-            postsResults.add(new DanbooruPost(postId, fileUrl, rating));
+            postsResults.add(new DanbooruPost(postId, fileUrl, rating, postTags));
         }
 
         return postsResults;
