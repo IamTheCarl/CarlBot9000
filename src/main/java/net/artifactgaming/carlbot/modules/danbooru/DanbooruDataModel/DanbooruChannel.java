@@ -14,11 +14,14 @@ public class DanbooruChannel {
     public final static String ACTIVE = "ACTIVE";
 
     public final static String LAST_IMAGE_SENT_ID = "LAST_IMAGE_SENT";
+
+    public final static String BANNED_TAGS = "BANNED_TAGS";
     ///endregion
 
 
     private String channelID;
     private String tags;
+
     private Rating minAcceptableRating;
 
     /**
@@ -28,12 +31,15 @@ public class DanbooruChannel {
 
     private String lastImageSentID;
 
-    public DanbooruChannel(String channelID, String tags, Rating minAcceptableRating, boolean active, String lastImageSentID) {
+    private String bannedTags;
+
+    public DanbooruChannel(String channelID, String tags, Rating minAcceptableRating, boolean active, String lastImageSentID, String bannedTags) {
         this.channelID = channelID;
         this.tags = tags.trim();
         this.minAcceptableRating = minAcceptableRating;
         this.active = active;
         this.lastImageSentID = lastImageSentID;
+        this.bannedTags = bannedTags;
     }
 
     public DanbooruChannel(String channelID) {
@@ -42,6 +48,7 @@ public class DanbooruChannel {
         this.minAcceptableRating = Rating.SAFE;
         this.active = false;
         lastImageSentID = Utils.STRING_EMPTY;
+        bannedTags = Utils.STRING_EMPTY;
     }
 
     public String getChannelID() {
@@ -89,5 +96,13 @@ public class DanbooruChannel {
 
     public void setLastImageSentID(String lastImageSentID) {
         this.lastImageSentID = lastImageSentID;
+    }
+
+    public String getBannedTags() {
+        return bannedTags;
+    }
+
+    public void setBannedTags(String bannedTags) {
+        this.bannedTags = bannedTags;
     }
 }

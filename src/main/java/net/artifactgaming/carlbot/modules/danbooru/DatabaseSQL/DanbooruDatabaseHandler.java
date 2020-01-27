@@ -44,8 +44,9 @@ public class DanbooruDatabaseHandler {
             Rating minAcceptableRating = Utils.toRating(result.getString(DanbooruChannel.MIN_ACCEPTABLE_RATING));
             boolean active = result.getInt(DanbooruChannel.ACTIVE) == 1;
             String lastImageSentID = result.getString(DanbooruChannel.LAST_IMAGE_SENT_ID);
+            String bannedTags = result.getString(DanbooruChannel.BANNED_TAGS);
 
-            DanbooruChannel danbooruChannel = new DanbooruChannel(channelID, tags, minAcceptableRating, active, lastImageSentID);
+            DanbooruChannel danbooruChannel = new DanbooruChannel(channelID, tags, minAcceptableRating, active, lastImageSentID, bannedTags);
             danbooruChannels.add(danbooruChannel);
         }
 
@@ -66,8 +67,9 @@ public class DanbooruDatabaseHandler {
             Rating minAcceptableRating = Utils.toRating(result.getString(DanbooruChannel.MIN_ACCEPTABLE_RATING));
             boolean active = result.getInt(DanbooruChannel.ACTIVE) == 1;
             String lastImageSentID = result.getString(DanbooruChannel.LAST_IMAGE_SENT_ID);
+            String bannedTags = result.getString(DanbooruChannel.BANNED_TAGS);
 
-            danbooruChannel = new DanbooruChannel(channelID, tags, minAcceptableRating, active, lastImageSentID);
+            danbooruChannel = new DanbooruChannel(channelID, tags, minAcceptableRating, active, lastImageSentID, bannedTags);
         } else {
             danbooruChannel = new DanbooruChannel(channel.getId());
 
@@ -86,6 +88,7 @@ public class DanbooruDatabaseHandler {
                 .set(DanbooruChannel.MIN_ACCEPTABLE_RATING, Utils.fromRating(danbooruChannel.getMinAcceptableRating()))
                 .set(DanbooruChannel.ACTIVE, danbooruChannel.isActive() ? "1" : "0")
                 .set(DanbooruChannel.LAST_IMAGE_SENT_ID, danbooruChannel.getLastImageSentID())
+                .set(DanbooruChannel.BANNED_TAGS, danbooruChannel.getBannedTags())
                 .execute();
     }
 
@@ -98,6 +101,7 @@ public class DanbooruDatabaseHandler {
                 .set(DanbooruChannel.MIN_ACCEPTABLE_RATING, "S")
                 .set(DanbooruChannel.ACTIVE, "0")
                 .set(DanbooruChannel.LAST_IMAGE_SENT_ID, Utils.STRING_EMPTY)
+                .set(DanbooruChannel.BANNED_TAGS, Utils.STRING_EMPTY)
                 .execute();
     }
 
@@ -114,6 +118,7 @@ public class DanbooruDatabaseHandler {
                     .pushValue(DanbooruChannel.MIN_ACCEPTABLE_RATING + " varchar")
                     .pushValue(DanbooruChannel.ACTIVE + " int")
                     .pushValue(DanbooruChannel.LAST_IMAGE_SENT_ID + " varchar")
+                    .pushValue(DanbooruChannel.BANNED_TAGS + " varchar")
                     .execute();
         }
 
