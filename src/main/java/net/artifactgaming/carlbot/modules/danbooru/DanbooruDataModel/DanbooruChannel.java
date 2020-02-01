@@ -18,6 +18,8 @@ public class DanbooruChannel {
     public final static String BANNED_TAGS = "BANNED_TAGS";
     ///endregion
 
+    private final static String DEFAULT_BANNED_TAGS = "69 top-down_bottom-up  girl_on_top straddling cowgirl_position legs_over_head center_opening topless bottomless zenra nude dress_lift downblouse nipples upskirt cleavage_reach erection molestation head_between_breasts";
+
 
     private String channelID;
     private String tags;
@@ -48,7 +50,7 @@ public class DanbooruChannel {
         this.minAcceptableRating = Rating.SAFE;
         this.active = false;
         lastImageSentID = Utils.STRING_EMPTY;
-        bannedTags = Utils.STRING_EMPTY;
+        bannedTags = DEFAULT_BANNED_TAGS;
     }
 
     public String getChannelID() {
