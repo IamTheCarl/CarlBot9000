@@ -23,7 +23,6 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.print.Doc;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -307,7 +306,7 @@ public class Danbooru implements Module, Documented, PersistentModule {
             }
 
             danbooruDatabaseHandler.updateDanbooruChannel(event.getGuild(), danbooruChannel);
-            event.getTextChannel().sendMessage("Danbooru webhook for this channel is now " + (isActive ? "enabled." : "disabled.")).queue();
+            event.getTextChannel().sendMessage("Danbooru webhook for this channel is now " + (isActive ? "enabled." + Utils.NEWLINE + "**NOTE:** You should set that channel as NSFW. Even our best efforts can't keep this thing clean." : "disabled.")).queue();
         }
 
         @Override
