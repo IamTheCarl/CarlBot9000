@@ -8,3 +8,4 @@ gradle/*
 build/*
 gradlew*
 main_config.json
+.idea/*
