@@ -5,3 +5,18 @@ The bot is currently half-baked and needs a lot of love and care. Right now the 
 
 We have an offical Discord Server for the bot:
 https://discord.gg/wQrFn6g
+
+### Running the bot
+
+To ensure that the bot runs, you would need to create a `main_config.json` file in the main hierarchy.
+
+The content of the json file should be this:
+
+```
+{
+    "token": "The bot's discord token",
+    "owners": ["Owner(s) of this bot in string"],
+    "danbooru_api_key": "API KEY FOR DANBOORU",
+    "danbooru_username": "YOUR DANBOORU USERNAME"
+}
+```

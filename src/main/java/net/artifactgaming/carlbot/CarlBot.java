@@ -1,10 +1,12 @@
 package net.artifactgaming.carlbot;
 
+import net.artifactgaming.carlbot.credentials.DanbooruLogin;
 import net.artifactgaming.carlbot.listeners.OnCarlBotReady;
 import net.artifactgaming.carlbot.listeners.OnGuildMember;
 import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.listeners.MessageReader;
+import net.artifactgaming.carlbot.modules.danbooru.Danbooru;
 import net.artifactgaming.carlbot.modules.games.Games;
 import net.artifactgaming.carlbot.modules.pelt.Pelt;
 import net.artifactgaming.carlbot.modules.purge.Purge;
@@ -39,8 +41,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class CarlBot extends ListenerAdapter implements Runnable {
+
+    private DanbooruLogin danbooruLoginDetails;
 
     private String token = null;
     private ArrayList<Module> modules = new ArrayList<>();
@@ -73,6 +78,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         CarlBot bot = new CarlBot();
         bot.loadConfig(new File("./main_config.json"));
 
+        bot.addModule(new Danbooru());
         bot.addModule(new Echo());
         bot.addModule(new Quotes());
         bot.addModule(new AuthorityManagement());
@@ -103,21 +109,31 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         onMessageReceivedListeners.add(onMessageReceived);
     }
 
-    public void loadConfig(File file) throws IOException {
+    private void loadConfig(File file) throws IOException {
+        ///region
+        Consumer<JSONObject> loadDanbooruCredential = jsonObject -> {
+            String danbooruApiKey = jsonObject.getString("danbooru_api_key");
+            String danbooruUsername = jsonObject.getString("danbooru_username");
+
+            danbooruLoginDetails = new DanbooruLogin(danbooruUsername, danbooruApiKey);
+        };
+        ///endregion
+
         String rawJson = readFile(file.getPath());
         JSONObject json = (JSONObject) JSONSerializer.toJSON(rawJson);
 
         token = json.getString("token");
-
         JSONArray owners = json.getJSONArray("owners");
 
         // There's no map feature, so we gotta unroll this ourselves.
         for (int i = 0; i < owners.size(); i++) {
             ownerIDs.add(owners.getString(i));
         }
+
+        loadDanbooruCredential.accept(json);
     }
 
-    public void addModule(Module module) {
+    private void addModule(Module module) {
         modules.add(module);
         moduleLookup.put(module.getClass(), module);
 
@@ -282,5 +298,9 @@ public class CarlBot extends ListenerAdapter implements Runnable {
 
     public Collection<Command> getCommands() {
         return commands.getCommands();
+    }
+
+    public DanbooruLogin getDanbooruLoginDetails() {
+        return danbooruLoginDetails;
     }
 }

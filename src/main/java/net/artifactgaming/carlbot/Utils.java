@@ -1,14 +1,17 @@
 package net.artifactgaming.carlbot;
 
+import net.artifactgaming.carlbot.modules.danbooru.Rating;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
+import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 
 public class Utils {
 
@@ -201,6 +204,77 @@ public class Utils {
 
         for (Message.Attachment attachment: messageAttachments) {
             if (attachment.isImage()){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static Rating toRating(String rating){
+        switch (rating.toUpperCase()){
+            case "Q":
+                return Rating.QUESTIONABLE;
+            case "S":
+                return Rating.SAFE;
+        }
+
+        return Rating.NSFW;
+    }
+
+    public static String fromRating(Rating rating) {
+        switch (rating) {
+            case QUESTIONABLE:
+                return "Q";
+            case SAFE:
+                return "S";
+        }
+
+        return "NSFW";
+    }
+
+    public static boolean isWithinMinRating(Rating target, Rating minRating){
+        return ratingToNumber(minRating) >= ratingToNumber(target);
+    }
+
+    private static int ratingToNumber(Rating rating) {
+        switch (rating) {
+            case QUESTIONABLE:
+                return 1;
+            case SAFE:
+                return 0;
+        }
+
+        return 2;
+    }
+
+    public static URI appendUri(String uri, String appendQuery) throws URISyntaxException {
+        URI oldUri = new URI(uri);
+
+        String newQuery = oldUri.getQuery();
+        if (newQuery == null) {
+            newQuery = appendQuery;
+        } else {
+            newQuery += "&" + appendQuery;
+        }
+
+        URI newUri = new URI(oldUri.getScheme(), oldUri.getAuthority(),
+                oldUri.getPath(), newQuery, oldUri.getFragment());
+
+        return newUri;
+    }
+
+    /**
+     * For danbooru module; Check if a tag contains another tag.
+     * @param targetTag
+     * @param bannedTagsStr
+     * @return
+     */
+    public static boolean containsBannedTags(String targetTag, String bannedTagsStr){
+        String[] bannedTags = bannedTagsStr.trim().split(" ");
+
+        for (String bannedTag: bannedTags){
+            if (targetTag.contains(bannedTag)){
                 return true;
             }
         }
