@@ -7,6 +7,7 @@ import net.artifactgaming.carlbot.listeners.OnMessageReaction;
 import net.artifactgaming.carlbot.modules.Echo;
 import net.artifactgaming.carlbot.listeners.MessageReader;
 import net.artifactgaming.carlbot.modules.danbooru.Danbooru;
+import net.artifactgaming.carlbot.modules.elongate.Elongate;
 import net.artifactgaming.carlbot.modules.games.Games;
 import net.artifactgaming.carlbot.modules.pelt.Pelt;
 import net.artifactgaming.carlbot.modules.purge.Purge;
@@ -89,6 +90,7 @@ public class CarlBot extends ListenerAdapter implements Runnable {
         bot.addModule(new Purge());
         bot.addModule(new Games());
         bot.addModule(new Statistics());
+        bot.addModule(new Elongate());
 
         bot.run();
     }
@@ -166,10 +168,6 @@ public class CarlBot extends ListenerAdapter implements Runnable {
     {
         byte[] encoded = Files.readAllBytes(Paths.get(path));
         return new String(encoded, StandardCharsets.UTF_8);
-
-        // We have to remove the newline at the end of the file.
-        //String string = new String(encoded, encoding);
-        //return string.substring(0, string.length() - 1);
     }
 
     public void addCommandPermissionChecker(CommandPermissionChecker checker) {

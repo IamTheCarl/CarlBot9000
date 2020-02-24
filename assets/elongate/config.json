@@ -1,0 +1,23 @@
+{
+  "elongables": [
+    {
+      "name": "aun",
+      "creator": "@egf6best",
+      "creator-nickname": "SenatorSnowBear",
+      "creator-website": "twitter.com",
+      "images": [
+        "aun/0.png",
+        "aun/1.png",
+        "aun/2.png"
+      ]
+    }
+  ],
+  "sound-effects": [
+    "Bwwaaaaaang!",
+    "Pichow!",
+    "Waaaaaaaaadump!",
+    "Dwang~",
+    "Bludbludblud~",
+    "Wisssssssh...\n\n\nThunk!"
+  ]
+}
