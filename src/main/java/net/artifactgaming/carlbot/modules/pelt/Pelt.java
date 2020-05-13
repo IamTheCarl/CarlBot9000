@@ -303,7 +303,7 @@ public class Pelt implements Module, Documented, PersistentModule, AuthorityRequ
 
     @Override
     public String getDocumentation() {
-        return "This module allows you to pelt anyone with a peanut";
+        return "This module allows you to pelt anyone with a peanut." + Utils.NEWLINE + "Use `selfPelt`, `pelt`, or `unpelt` for your needs.";
     }
 
     @Override
